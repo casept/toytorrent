@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <deque>
+#include <string>
 
 // The various kinds of BEncode-representable objects
 enum class BEncodeObjectType { 
@@ -18,8 +19,10 @@ enum class BEncodeObjectType {
 // This class describes a BEncoded object.
 class BEncodeObject {
     public:
+    // This object shouldn't be constructed by hand
+    BEncodeObject() = delete;
     // Extract the next possible object from a bencoded stream. 
-    BEncodeObject(std::deque<char> in);
+    explicit BEncodeObject(std::deque<char> &in);
     
     // What kind of BEncode-representable object this is.
     BEncodeObjectType type;
@@ -32,6 +35,10 @@ class BEncodeObject {
     // Will be some if the object is a list
     std::optional<std::vector<BEncodeObject>> list;
 };
+
+// Used in tests
+bool operator==(const BEncodeObject& lhs, const BEncodeObject& rhs);
+
 
 // This class provides a bencode parser which can
 // be used as an iterator to extract one decoded element at a time.

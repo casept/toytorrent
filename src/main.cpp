@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <optional>
 #include <deque>
+#include <string>
 
 #include "bencode_parser.h"
 
