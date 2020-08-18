@@ -9,6 +9,7 @@ pkgs.mkShell {
     # Build tooling
     pkgs.cmake
     pkgs.cppcheck
+    pkgs.gtest
 
     # Libraries we depend on
     pkgs.botan2

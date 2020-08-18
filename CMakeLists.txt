@@ -1,15 +1,26 @@
 # Semi-recent, I don't want to deal with outdated distro BS
 cmake_minimum_required(VERSION 3.15)
+
+# Forbid in-source builds
+if ("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+  message(FATAL_ERROR "In-source builds are disabled.
+    Please create a subfolder and use `cmake ..` inside it.
+    NOTE: cmake will now create CMakeCache.txt and CMakeFiles/*.
+          You must delete them, or cmake will refuse to work.")
+endif()
+
 project(toytorrent VERSION 0.1
                   DESCRIPTION "A toy torrent client"
                   LANGUAGES CXX)
-add_executable(${PROJECT_NAME} src/main.cpp src/bencoding.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/bencode_parser.cpp)
 
 # We want ISO C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-Wall -Wextra -pedantic -Werror)
+# Apparently cmake is so broken that C++17 doesn't actually get passed to the compiler without this
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # Boilerplate for setting the build type
 set(default_build_type "Release")
@@ -38,4 +49,13 @@ if(CLANG_TIDY_EXE)
 endif()
 if (CLANG_TIDY_FIX AND NOT CLANG_TIDY_EXE)
     message(FATAL_ERROR "Could NOT find clang-tidy")
+endif()
+
+option(ENABLE_TESTS "Run tests" OFF)
+if(ENABLE_TESTS)
+    enable_testing()
+    include(GoogleTest)
+    add_executable(runUnitTests src/test/main.cpp src/bencode_parser.cpp src/test/bencode_parser.cpp)
+    gtest_add_tests(runUnitTests "" AUTO)
+    target_link_libraries(runUnitTests PUBLIC gtest)
 endif()
