@@ -13,6 +13,9 @@ project(toytorrent VERSION 0.1
                   DESCRIPTION "A toy torrent client"
                   LANGUAGES CXX)
 add_executable(${PROJECT_NAME} src/main.cpp src/bencode_parser.cpp)
+install(TARGETS ${PROJECT_NAME}
+        CONFIGURATIONS Release
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # We want ISO C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -51,8 +54,7 @@ if (CLANG_TIDY_FIX AND NOT CLANG_TIDY_EXE)
     message(FATAL_ERROR "Could NOT find clang-tidy")
 endif()
 
-option(ENABLE_TESTS "Run tests" OFF)
-if(ENABLE_TESTS)
+if(BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
     add_executable(runUnitTests src/test/main.cpp src/bencode_parser.cpp src/test/bencode_parser.cpp)
