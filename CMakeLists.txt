@@ -12,7 +12,7 @@ endif()
 project(toytorrent VERSION 0.1
                   DESCRIPTION "A toy torrent client"
                   LANGUAGES CXX)
-add_executable(${PROJECT_NAME} src/main.cpp src/bencode_parser.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/bencode_parser.cpp src/metainfo.cpp)
 install(TARGETS ${PROJECT_NAME}
         CONFIGURATIONS Release
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -57,7 +57,7 @@ endif()
 if(BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
-    add_executable(toytorrent_test src/test/main.cpp src/bencode_parser.cpp src/test/bencode_parser.cpp)
+    add_executable(toytorrent_test src/test/main.cpp src/bencode_parser.cpp src/metainfo.cpp src/test/bencode_parser.cpp src/test/metainfo.cpp)
     gtest_add_tests(toytorrent_test "" AUTO)
     target_link_libraries(toytorrent_test PUBLIC gtest)
 endif()
