@@ -1,4 +1,5 @@
 let
   sources = import ./nix/sources.nix;
   nixpkgs = import sources.nixpkgs { };
-in (nixpkgs.callPackage (import ./derivation.nix) { })
+  cpr = (nixpkgs.callPackage ./nix/pkgs/cpr { });
+in (nixpkgs.callPackage (import ./derivation.nix) { cpr = cpr; })

@@ -9,13 +9,14 @@ if ("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
           You must delete them, or cmake will refuse to work.")
 endif()
 
+# Source files used both in the program and tests
+list(APPEND SHARED_FILES "src/bencode_parser.cpp" "src/metainfo.cpp" "src/tracker.cpp")
+
 project(toytorrent VERSION 0.1
                   DESCRIPTION "A toy torrent client"
                   LANGUAGES CXX)
-add_executable(${PROJECT_NAME} src/main.cpp src/bencode_parser.cpp src/metainfo.cpp)
-install(TARGETS ${PROJECT_NAME}
-        CONFIGURATIONS Release
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_executable(${PROJECT_NAME} src/main.cpp ${SHARED_FILES})
+
 
 # We want ISO C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -23,7 +24,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 # Apparently cmake is so broken that C++17 doesn't actually get passed to the compiler without this
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
+# CPR setup
+find_package(CURL REQUIRED)
+find_package(CPR REQUIRED)
+
+# Actually configure the target
+# Don't move this around, position in the file was determined by trial and error
+# Seriously, who though an imperative build system was a good idea, aaarrrrgh!!!
+target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS} ${CPR_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES} ${CPR_LIBRARIES})
+install(TARGETS ${PROJECT_NAME}
+        CONFIGURATIONS Release
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Boilerplate for setting the build type
 set(default_build_type "Release")
@@ -54,10 +68,20 @@ if (CLANG_TIDY_FIX AND NOT CLANG_TIDY_EXE)
     message(FATAL_ERROR "Could NOT find clang-tidy")
 endif()
 
+# Test setup
 if(BUILD_TESTING)
+    # Files only used for tests
+    list(APPEND TEST_FILES "src/test/main.cpp" "src/test/bencode_parser.cpp" "src/test/metainfo.cpp" "src/test/tracker.cpp")
     enable_testing()
     include(GoogleTest)
-    add_executable(toytorrent_test src/test/main.cpp src/bencode_parser.cpp src/metainfo.cpp src/test/bencode_parser.cpp src/test/metainfo.cpp)
-    gtest_add_tests(toytorrent_test "" AUTO)
-    target_link_libraries(toytorrent_test PUBLIC gtest)
+    add_executable(${PROJECT_NAME}_test ${TEST_FILES} ${SHARED_FILES})
+    gtest_add_tests(${PROJECT_NAME}_test "" AUTO)
+    target_include_directories(${PROJECT_NAME}_test PRIVATE ${CURL_INCLUDE_DIRS} ${CPR_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest ${CURL_LIBRARIES} ${CPR_LIBRARIES})
+    # Useful for integration testing of the nix package outside the nix sandbox (running tests in a container)
+    if (INSTALL_TESTS)
+        install(TARGETS toytorrent_test
+            CONFIGURATIONS Release
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
 endif()

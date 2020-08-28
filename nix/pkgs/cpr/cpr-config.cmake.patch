@@ -1,0 +1,22 @@
+--- ../cpr-config.cmake	2020-08-27 20:04:24.041554696 +0200
++++ ../cpr-config.cmake.new	2020-08-27 21:23:11.349570134 +0200
+@@ -10,13 +10,17 @@
+ #                     to cpr.h, which must be included in every
+ #                     file that uses this interface
+ 
+-find_path(CPR_INCLUDE_DIR
+-          NAMES cpr.h)
++SET(CPR_INCLUDE_ROOT "@out@/include/cpr/")
++SET(CPR_LIBRARY_ROOT "@out@/lib/")
+ 
+ find_library(CPR_LIBRARY
+              NAMES cpr
+              HINTS ${CPR_LIBRARY_ROOT})
+ 
++find_path(CPR_INCLUDE_DIR
++            NAMES cpr.h
++            HINTS ${CPR_INCLUDE_ROOT})
++
+ include(FindPackageHandleStandardArgs)
+ find_package_handle_standard_args(CPR REQUIRED_VARS CPR_LIBRARY CPR_INCLUDE_DIR)
+ 
