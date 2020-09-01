@@ -7,6 +7,8 @@
 #include <map>
 #include <algorithm>
 
+#include <botan-2/botan/hash.h>
+
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary
     auto top_level_parser = BEncodeParser(in);
@@ -18,6 +20,8 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     // info itself is also a dict
     auto info = top_level_dict.find(std::string("info"))->second;
     auto info_dict = info.dict.value();
+    // We need this to compute the infohash later
+    m_bencoded_info = top_level_dict.find(std::string("info"))->second.as_raw_string();
 
     m_piece_length = info_dict.find("piece length")->second.integer.value();
     // TODO: Handle the directory case
@@ -55,5 +59,11 @@ MetaInfo::MetaInfo(std::deque<char> in) {
         pieces.erase(0, sha1_len);
         m_pieces.push_back(hash);
     }
+}
 
+std::string MetaInfo::infohash() {
+    auto hasher = Botan::HashFunction::create_or_throw("SHA1");
+    auto hash_vec = hasher.get()->process(this->m_bencoded_info);
+    auto hash = std::string(hash_vec.begin(), hash_vec.end());
+    return hash;
 }

@@ -22,6 +22,8 @@ constexpr size_t sha1_len = 20;
 class MetaInfo {
     MetaInfo() = delete;
     private:
+    // Used for computing the infohash
+    std::string m_bencoded_info;
 
     public:
     // Primary tracker URL embedded in this metainfo.
@@ -39,6 +41,8 @@ class MetaInfo {
     std::vector<std::array<char, sha1_len>> m_pieces;
     // Parses the data in the queue into a MetaInfo instance
     explicit MetaInfo(std::deque<char> in);
+    // Computes the infohash for this MetaInfo.
+    std::string infohash();
 };
 
 #endif

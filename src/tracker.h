@@ -2,12 +2,13 @@
 #define TOYTORRENT_TRACKER_H_
 
 #include "bencode_parser.h"
+#include "peer.h"
 
 #include <string>
 #include <array>
 #include <cstdint>
-
-constexpr std::size_t peer_id_length {20};
+#include <vector>
+#include <optional>
 
 // This class abstracts away communication with a particular tracker.
 class TrackerCommunicator {
@@ -20,12 +21,14 @@ class TrackerCommunicator {
     std::uint64_t m_data_left;
     std::uint32_t m_port;
     // Send the given event to the tracker with the data in this class
-    void send_to_tracker(const std::string &event);
+    // Returns a vector of peers the tracker gave us if successful.
+    // Causes an exception if not.
+    std::tuple<std::vector<Peer>, std::int64_t> send_to_tracker(const std::string &event);
     
     public:
     TrackerCommunicator() = delete;
     // Create a TrackerCommunicator to talk with the given tracker.
-    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, std::array<char, peer_id_length> our_peer_id, std::string infohash);
+    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id, std::string infohash);
     // Update our statistics about uploaded and downloaded data
     // which are sent to the tracker.
     void set_data_downloaded(std::uint64_t num_bytes);
@@ -33,13 +36,24 @@ class TrackerCommunicator {
     void set_data_left(std::uint64_t num_bytes);
     
     // Tell the tracker that our download is finished.
-    void send_completed();
+    // Returns a vector of peers the tracker gave us if successful.
+    // Causes an exception if not.
+    std::tuple<std::vector<Peer>, std::int64_t> send_completed();
+
     // Tell the tracker that we've just started our download.
-    void send_started();
+    // Returns a vector of peers the tracker gave us if successful.
+    // Causes an exception if not.
+    std::tuple<std::vector<Peer>, std::int64_t> send_started();
+
     // Tell the tracker that we've stopped downloading.
-    void send_stopped();
+    // Returns a vector of peers the tracker gave us if successful.
+    // Causes an exception if not.
+    std::tuple<std::vector<Peer>, std::int64_t> send_stopped();
+
     // Tell the tracker that we just want more peers.
-    void send_update();
+    // Returns a vector of peers the tracker gave us if successful.
+    // Causes an exception if not.
+    std::tuple<std::vector<Peer>, std::int64_t> send_update();
 };
 
 struct TrackerResponse {

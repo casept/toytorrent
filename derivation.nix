@@ -1,10 +1,11 @@
-{ stdenv, cmake, gtest, cpr, curlFull }:
+{ stdenv, cmake, gtest, cpr, curlFull, botan2, pkg-config }:
 stdenv.mkDerivation {
   name = "toytorrent";
   src = ./.;
-  nativeBuildInputs = [ cmake curlFull.dev ];
+  nativeBuildInputs = [ cmake curlFull.dev pkg-config ];
   buildInputs = [
     cpr
+    botan2
     gtest
   ]; # gtest so integration that integration tests can be run in arion-compose network
   doCheck =

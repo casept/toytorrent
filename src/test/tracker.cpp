@@ -8,5 +8,6 @@ with several different client implementations serving test torrents and an opent
 */
 
 TEST(TrackerCommunication, simple_announce) {
+    // FIXME: This should run locally
 
 }
