@@ -135,7 +135,7 @@ bool operator==(const BEncodeObject& lhs, const BEncodeObject& rhs) {
 
 
 BEncodeObject::BEncodeObject(std::deque<char> &in) {
-    m_raw_string = std::string(in.begin(), in.end());
+    m_raw_bytes = std::vector<char>(in.begin(), in.end());
 
     // The type of a BEncode object depends on the first character.
     char first_char = in.front();
@@ -179,8 +179,8 @@ BEncodeObject::BEncodeObject(std::deque<char> &in) {
     }
 }
 
-std::string BEncodeObject::as_raw_string() {
-    return m_raw_string;
+std::vector<char> BEncodeObject::as_raw_bytes() {
+    return m_raw_bytes;
 }
 
 BEncodeParser::BEncodeParser(const std::deque<char> data){

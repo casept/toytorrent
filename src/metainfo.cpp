@@ -1,13 +1,15 @@
 #include "metainfo.h"
+
 #include "bencode_parser.h"
 
-#include <deque>
+#include <algorithm>
 #include <array>
 #include <cstdint>
+#include <deque>
 #include <map>
-#include <algorithm>
 
 #include <botan-2/botan/hash.h>
+#include <botan-2/botan/hex.h>
 
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary
@@ -15,13 +17,14 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     auto top_level_dict = top_level_parser.next().value().dict.value();
 
     // Primary tracker announce URL
-    m_primary_tracker_url = top_level_dict.find(std::string("announce"))->second.str.value();
+    m_primary_tracker_url = top_level_dict.find("announce")->second.str.value();
 
     // info itself is also a dict
-    auto info = top_level_dict.find(std::string("info"))->second;
+    auto info = top_level_dict.find("info")->second;
     auto info_dict = info.dict.value();
     // We need this to compute the infohash later
-    m_bencoded_info = top_level_dict.find(std::string("info"))->second.as_raw_string();
+    m_bencoded_info = top_level_dict.find("info")->second.as_raw_bytes();
+    m_bencoded_info.push_back('e');
 
     m_piece_length = info_dict.find("piece length")->second.integer.value();
     // TODO: Handle the directory case
@@ -50,11 +53,11 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     // All the hashes are one long string rather than a list of smaller ones
     auto pieces = info_dict.find("pieces")->second.str.value();
     if ((pieces.length() % sha1_len) != 0) {
-        throw std::runtime_error {"Pieces list must only contain whole hashes"};
+        throw std::runtime_error{"Pieces list must only contain whole hashes"};
     }
-    int64_t num_pieces = pieces.length()/sha1_len;
+    int64_t num_pieces = pieces.length() / sha1_len;
     for (std::int64_t i = 0; i < num_pieces; i++) {
-        std::array<char, sha1_len> hash {};
+        std::array<char, sha1_len> hash{};
         std::copy_n(pieces.begin(), sha1_len, hash.begin());
         pieces.erase(0, sha1_len);
         m_pieces.push_back(hash);
@@ -63,7 +66,8 @@ MetaInfo::MetaInfo(std::deque<char> in) {
 
 std::string MetaInfo::infohash() {
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
-    auto hash_vec = hasher.get()->process(this->m_bencoded_info);
-    auto hash = std::string(hash_vec.begin(), hash_vec.end());
+    const auto hash_vec
+        = hasher.get()->process(reinterpret_cast<uint8_t*>(this->m_bencoded_info.data()), this->m_bencoded_info.size());
+    const auto hash = Botan::hex_encode(hash_vec);
     return hash;
 }

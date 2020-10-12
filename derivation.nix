@@ -1,4 +1,4 @@
-{ stdenv, cmake, gtest, cpr, curlFull, botan2, pkg-config }:
+{ stdenv, cmake, pkg-config, gtest, cpr, curlFull, botan2 }:
 stdenv.mkDerivation {
   name = "toytorrent";
   src = ./.;

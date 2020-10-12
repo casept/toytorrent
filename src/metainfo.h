@@ -23,7 +23,7 @@ class MetaInfo {
     MetaInfo() = delete;
     private:
     // Used for computing the infohash
-    std::string m_bencoded_info;
+    std::vector<char> m_bencoded_info;
 
     public:
     // Primary tracker URL embedded in this metainfo.

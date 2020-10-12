@@ -20,7 +20,7 @@ enum class BEncodeObjectType {
 class BEncodeObject {
     private:
     // This is used so we can get the raw contents for infohash computation.
-    std::string m_raw_string;
+    std::vector<char> m_raw_bytes;
 
     public:
     // This object shouldn't be constructed by hand
@@ -28,7 +28,7 @@ class BEncodeObject {
     // Extract the next possible object from a bencoded stream. 
     explicit BEncodeObject(std::deque<char> &in);
     // Get the object in it's BEncoded form
-    std::string as_raw_string();
+    std::vector<char> as_raw_bytes();
     // What kind of BEncode-representable object this is.
     BEncodeObjectType type;
     // Will be some if the object is a string
