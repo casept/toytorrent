@@ -1,11 +1,10 @@
 #include "../metainfo.h"
 
-#include <cmrc/cmrc.hpp>
 #include <errno.h>
+#include <gtest/gtest.h>
 #include <string.h>
 
-#include <gtest/gtest.h>
-
+#include <cmrc/cmrc.hpp>
 #include <deque>
 #include <fstream>
 #include <string>

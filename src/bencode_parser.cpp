@@ -1,24 +1,22 @@
 #include "bencode_parser.h"
 
-#include <iostream>
-#include <map>
-#include <variant>
-#include <optional>
-#include <vector>
-#include <algorithm>
-#include <iterator>
-#include <memory>
-#include <utility>
-#include <string>
-#include <deque>
-#include <utility>
-
 #include <ctype.h>
 
+#include <algorithm>
+#include <deque>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 // Takes a bencoded string out of the stream.
 std::string take_bencode_string(std::deque<char> &in) {
-    std::string len_as_str {""};
+    std::string len_as_str{""};
     // Collect numbers until we find the first non-decimal char
     while (true) {
         char next_char = in.front();
@@ -32,16 +30,16 @@ std::string take_bencode_string(std::deque<char> &in) {
             throw std::runtime_error{"Non-numeric characters not allowed in length specifier of BEncode string"};
         }
     }
-    const std::int64_t len {std::stoll(len_as_str)};
+    const std::int64_t len{std::stoll(len_as_str)};
 
     // ...and read the actual string
-    
-    // TODO: The spec states that the number is the "number of characters", but what does that mean for UTF-8 (grapheme clusters/codepoints/...?)
-    // Therefore, assume it means the number of bytes (ASCII chars) for now.
-    
+
+    // TODO: The spec states that the number is the "number of characters", but what does that mean for UTF-8 (grapheme
+    // clusters/codepoints/...?) Therefore, assume it means the number of bytes (ASCII chars) for now.
+
     // For whatever reason (can't decipher the cryptic template error), copy_n
     // doesn't work directly on the deque into the string
-    std::vector<char> data {};
+    std::vector<char> data{};
     std::copy_n(in.begin(), len, std::back_inserter(data));
     std::string str(data.begin(), data.end());
     for (std::size_t i = 0; i < str.length(); i++) {
@@ -52,7 +50,7 @@ std::string take_bencode_string(std::deque<char> &in) {
 
 // Takes a bencoded integer out of the stream.
 std::int64_t take_bencode_integer(std::deque<char> &in) {
-    std::string str_num {""};
+    std::string str_num{""};
     // Toss the leading i
     in.pop_front();
 
@@ -72,7 +70,7 @@ std::int64_t take_bencode_integer(std::deque<char> &in) {
 }
 
 std::map<std::string, BEncodeObject> take_bencode_dict(std::deque<char> &in) {
-    std::map<std::string, BEncodeObject> out {};
+    std::map<std::string, BEncodeObject> out{};
     // Don't want the leading 'd'
     in.pop_front();
     while (true) {
@@ -96,15 +94,15 @@ std::map<std::string, BEncodeObject> take_bencode_dict(std::deque<char> &in) {
 }
 
 std::vector<BEncodeObject> take_bencode_list(std::deque<char> &in) {
-    std::vector<BEncodeObject> out {};
+    std::vector<BEncodeObject> out{};
     // Don't want the leading 'l'
     in.pop_front();
     // Recursively extract list objects. If an object is followed by an 'e',
     // it was the last one in this list.
     while (true) {
         char next_char = in.front();
-            auto str = std::string{"Next chara is "};
-            str.push_back(next_char);
+        auto str = std::string{"Next chara is "};
+        str.push_back(next_char);
         if (next_char == 'e') {
             in.pop_front();
             break;
@@ -115,7 +113,7 @@ std::vector<BEncodeObject> take_bencode_list(std::deque<char> &in) {
     return out;
 }
 
-bool operator==(const BEncodeObject& lhs, const BEncodeObject& rhs) {
+bool operator==(const BEncodeObject &lhs, const BEncodeObject &rhs) {
     if (lhs.type != rhs.type) {
         return false;
     }
@@ -132,7 +130,6 @@ bool operator==(const BEncodeObject& lhs, const BEncodeObject& rhs) {
     // Should be unreachable
     return false;
 }
-
 
 BEncodeObject::BEncodeObject(std::deque<char> &in) {
     m_raw_bytes = std::vector<char>(in.begin(), in.end());
@@ -154,38 +151,34 @@ BEncodeObject::BEncodeObject(std::deque<char> &in) {
     }
     // The first character is i -> it's an integer
     switch (first_char) {
-    case 'i': {
-        type = {BEncodeObjectType::Integer};
-        integer = {take_bencode_integer(in)};
-        break;
-    }
-    // The first character is d -> it's a dict
-    case 'd': {
-        type = {BEncodeObjectType::Dict};
-        dict = {take_bencode_dict(in)};
-        break;
-    }
-    // The first character is l -> it's a list
-    case 'l': {
-        type = {BEncodeObjectType::List};
-        list = {take_bencode_list(in)};
-        break;
-    }
-    default: {
-        auto err = std::string("Unexpected BEncoded object type starting with character ");
-        err.push_back(first_char);
-        throw std::runtime_error(err);
-    }
+        case 'i': {
+            type = {BEncodeObjectType::Integer};
+            integer = {take_bencode_integer(in)};
+            break;
+        }
+        // The first character is d -> it's a dict
+        case 'd': {
+            type = {BEncodeObjectType::Dict};
+            dict = {take_bencode_dict(in)};
+            break;
+        }
+        // The first character is l -> it's a list
+        case 'l': {
+            type = {BEncodeObjectType::List};
+            list = {take_bencode_list(in)};
+            break;
+        }
+        default: {
+            auto err = std::string("Unexpected BEncoded object type starting with character ");
+            err.push_back(first_char);
+            throw std::runtime_error(err);
+        }
     }
 }
 
-std::vector<char> BEncodeObject::as_raw_bytes() {
-    return m_raw_bytes;
-}
+std::vector<char> BEncodeObject::as_raw_bytes() { return m_raw_bytes; }
 
-BEncodeParser::BEncodeParser(const std::deque<char> data){
-    m_data = data;
-}
+BEncodeParser::BEncodeParser(const std::deque<char> data) { m_data = data; }
 
 std::optional<BEncodeObject> BEncodeParser::next() {
     if (m_data.empty()) {
@@ -194,4 +187,3 @@ std::optional<BEncodeObject> BEncodeParser::next() {
         return {BEncodeObject(m_data)};
     };
 }
-

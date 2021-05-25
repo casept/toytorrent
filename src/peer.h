@@ -1,14 +1,14 @@
 #ifndef TOYTORRENT_PEER_H_
 #define TOYTORRENT_PEER_H_
-#include <cstdint>
 #include <array>
+#include <cstdint>
 #include <string>
 
-constexpr std::size_t peer_id_length {20};
+constexpr std::size_t peer_id_length{20};
 typedef std::array<char, peer_id_length> PeerID;
 
 class Peer {
-    public:
+   public:
     std::string m_ip;
     std::uint32_t m_port;
     PeerID m_id;

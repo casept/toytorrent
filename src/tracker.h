@@ -1,18 +1,18 @@
 #ifndef TOYTORRENT_TRACKER_H_
 #define TOYTORRENT_TRACKER_H_
 
-#include "bencode_parser.h"
-#include "peer.h"
-
 #include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
+#include "bencode_parser.h"
+#include "peer.h"
+
 // This class abstracts away communication with a particular tracker.
 class TrackerCommunicator {
-  private:
+   private:
     std::string m_announce_url;
     std::string m_info_hash;
     std::array<char, peer_id_length> m_peer_id;
@@ -25,7 +25,7 @@ class TrackerCommunicator {
     // Causes an exception if not.
     std::tuple<std::vector<Peer>, std::int64_t> send_to_tracker(const std::string &event);
 
-  public:
+   public:
     TrackerCommunicator() = delete;
     // Create a TrackerCommunicator to talk with the given tracker.
     explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id,

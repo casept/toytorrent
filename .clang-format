@@ -1,30 +1,8 @@
 ---
-  BasedOnStyle: Google
-  AccessModifierOffset: '-2'
-  AlignTrailingComments: 'true'
-  AllowAllParametersOfDeclarationOnNextLine: 'false'
-  AlwaysBreakTemplateDeclarations: 'No'
-  BreakBeforeBraces: Attach
-  ColumnLimit: '120'
-  ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
-  IndentPPDirectives: AfterHash
-  IndentWidth: '4'
-  NamespaceIndentation: All
-  BreakBeforeBinaryOperators: All
-  BreakBeforeTernaryOperators: 'true'
-
-  SortIncludes: true
-  IncludeBlocks: Regroup
-  IncludeCategories:
-    # Headers in <> without extension.
-    - Regex:           '<([A-Za-z0-9\Q/-_\E])+>'
-      Priority:        4
-    # Headers in <> from specific external libraries.
-    - Regex:           '<(gtest|boost)\/'
-      Priority:        3
-    # Headers in <> with extension.
-    - Regex:           '<([A-Za-z0-9.\Q/-_\E])+>'
-      Priority:        2
-    # Headers in "" with extension.
-    - Regex:           '"([A-Za-z0-9.\Q/-_\E])+"'
-      Priority:        1
+BasedOnStyle: Google
+SortIncludes: true
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+ColumnLimit: 120
+IndentPPDirectives: BeforeHash

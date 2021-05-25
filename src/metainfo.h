@@ -1,31 +1,29 @@
 #ifndef TOYTORRENT_METAINFO_H_
 #define TOYTORRENT_METAINFO_H_
 
-#include <string>
+#include <array>
+#include <cstdint>
 #include <deque>
 #include <optional>
-#include <cstdint>
-#include <array>
+#include <string>
 #include <vector>
 
 // TODO: Implement multifile torrents
 
 // What kind of download the metainfo describes.
-enum class DownloadType {
-    SingleFile,
-    Directory
-};
+enum class DownloadType { SingleFile, Directory };
 
 // The length of a SHA1 hash in bytes
 constexpr size_t sha1_len = 20;
 
 class MetaInfo {
     MetaInfo() = delete;
-    private:
+
+   private:
     // Used for computing the infohash
     std::vector<char> m_bencoded_info;
 
-    public:
+   public:
     // Primary tracker URL embedded in this metainfo.
     std::string m_primary_tracker_url;
     // Whether we're downloading a file or directory

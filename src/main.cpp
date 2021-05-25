@@ -1,14 +1,14 @@
 #include <errno.h>
 #include <string.h>
 
+#include <algorithm>
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <vector>
-#include <algorithm>
 #include <optional>
-#include <deque>
 #include <string>
+#include <vector>
 
 #include "metainfo.h"
 
@@ -30,7 +30,7 @@ std::ifstream parse_args(int argc, char** argv) {
 int main(int argc, char** argv) {
     // Read the torrent file
     auto torrent_file = parse_args(argc, argv);
-    std::deque<char> data {};
+    std::deque<char> data{};
     // TODO: Figure out how to use std::copy here
     while (!torrent_file.eof()) {
         data.push_back(torrent_file.get());
@@ -39,5 +39,4 @@ int main(int argc, char** argv) {
     auto metainfo = MetaInfo(data);
 
     // TODO: Actually download
-
 }

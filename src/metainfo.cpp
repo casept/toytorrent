@@ -1,6 +1,7 @@
 #include "metainfo.h"
 
-#include "bencode_parser.h"
+#include <botan-2/botan/hash.h>
+#include <botan-2/botan/hex.h>
 
 #include <algorithm>
 #include <array>
@@ -8,8 +9,7 @@
 #include <deque>
 #include <map>
 
-#include <botan-2/botan/hash.h>
-#include <botan-2/botan/hex.h>
+#include "bencode_parser.h"
 
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary
@@ -66,8 +66,8 @@ MetaInfo::MetaInfo(std::deque<char> in) {
 
 std::string MetaInfo::infohash() {
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
-    const auto hash_vec
-        = hasher.get()->process(reinterpret_cast<uint8_t*>(this->m_bencoded_info.data()), this->m_bencoded_info.size());
+    const auto hash_vec =
+        hasher.get()->process(reinterpret_cast<uint8_t*>(this->m_bencoded_info.data()), this->m_bencoded_info.size());
     const auto hash = Botan::hex_encode(hash_vec);
     return hash;
 }
