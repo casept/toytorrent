@@ -4,15 +4,15 @@
 #include "bencode_parser.h"
 #include "peer.h"
 
-#include <string>
 #include <array>
 #include <cstdint>
-#include <vector>
 #include <optional>
+#include <string>
+#include <vector>
 
 // This class abstracts away communication with a particular tracker.
 class TrackerCommunicator {
-    private:
+  private:
     std::string m_announce_url;
     std::string m_info_hash;
     std::array<char, peer_id_length> m_peer_id;
@@ -24,17 +24,18 @@ class TrackerCommunicator {
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
     std::tuple<std::vector<Peer>, std::int64_t> send_to_tracker(const std::string &event);
-    
-    public:
+
+  public:
     TrackerCommunicator() = delete;
     // Create a TrackerCommunicator to talk with the given tracker.
-    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id, std::string infohash);
+    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id,
+                                 std::string infohash);
     // Update our statistics about uploaded and downloaded data
     // which are sent to the tracker.
     void set_data_downloaded(std::uint64_t num_bytes);
     void set_data_uploaded(std::uint64_t num_bytes);
     void set_data_left(std::uint64_t num_bytes);
-    
+
     // Tell the tracker that our download is finished.
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
