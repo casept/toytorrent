@@ -1,5 +1,4 @@
-#ifndef TOYTORRENT_METAINFO_H_
-#define TOYTORRENT_METAINFO_H_
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -42,5 +41,3 @@ class MetaInfo {
     // Computes the infohash for this MetaInfo.
     std::string infohash();
 };
-
-#endif

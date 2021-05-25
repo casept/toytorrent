@@ -24,15 +24,15 @@ project(
 list(APPEND EXE_FILES "src/main.cpp")
 add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
 
-# We want ISO C++17
-set(CMAKE_CXX_STANDARD 17)
+# We want ISO C++20
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 # TODO: Add -Werror once bin2cpp no longer adds unneeded semicolons
 add_compile_options(-Wall -Wextra -Wpedantic)
 # Apparently cmake is so broken that C++17 doesn't actually get passed to the
 # compiler without this
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 # CPR setup
 find_package(CURL REQUIRED)

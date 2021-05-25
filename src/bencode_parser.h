@@ -1,5 +1,5 @@
-#ifndef TOYTORRENT_BENCODING_H_
-#define TOYTORRENT_BENCODING_H_
+#pragma once
+
 #include <deque>
 #include <iostream>
 #include <map>
@@ -54,4 +54,3 @@ class BEncodeParser {
     // Returns the next member, if available, none otherwise
     std::optional<BEncodeObject> next();
 };
-#endif

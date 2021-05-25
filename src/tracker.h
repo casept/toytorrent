@@ -1,5 +1,4 @@
-#ifndef TOYTORRENT_TRACKER_H_
-#define TOYTORRENT_TRACKER_H_
+#pragma once
 
 #include <array>
 #include <cstdint>
@@ -69,4 +68,3 @@ struct TrackerResponse {
     // TODO: Represent better
     BEncodeObject peers;
 };
-#endif

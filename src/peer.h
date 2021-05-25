@@ -1,5 +1,5 @@
-#ifndef TOYTORRENT_PEER_H_
-#define TOYTORRENT_PEER_H_
+#pragma once
+
 #include <array>
 #include <cstdint>
 #include <string>
@@ -16,4 +16,3 @@ class Peer {
     Peer() = delete;
     Peer(PeerID id, std::string const &ip, std::uint32_t port);
 };
-#endif
