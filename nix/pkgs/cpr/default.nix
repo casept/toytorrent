@@ -1,26 +1,26 @@
-{ stdenv, fetchFromGitHub, cmake, gtest, gnused, curl, static ? false }:
+{ stdenv, fetchFromGitHub, cmake, gtest, gnused, curl, zlib, static ? false }:
 
 stdenv.mkDerivation rec {
   pname = "cpr";
-  version = "1.5.1";
+  version = "1.6.2";
 
   src = fetchFromGitHub {
     owner = "whoshuu";
     repo = "cpr";
-    rev = "v" + version;
-    sha256 = "17xackp3kcr23vgfykyhbzpgd53jhbsc3my14221v5wmz6g6lvng";
+    rev = version;
+    sha256 = "sha256-oV03Jcsi2Ja3ObQu7UW5sCF6Hx/7gb8axvcZuDULMAA=";
   };
 
   nativeBuildInputs = [ cmake ];
-  buildInputs = [ curl ];
+  buildInputs = [ curl zlib ];
   checkInputs = [ gtest ];
   doCheck =
     false; # Tries to pull in libs using cmake download which we don't have in nixpkgs
   cmakeFlags = [
-    "-DUSE_SYSTEM_CURL=ON"
-    "-DUSE_SYSTEM_GTEST=ON"
-    "-DBUILD_CPR_TESTS=OFF"
-    "-DBUILD_CPR_TESTS_SSL=OFF"
+    "-DCPR_FORCE_USE_SYSTEM_CURL=ON"
+    "-DCPR_USE_SYSTEM_GTEST=ON"
+    "-DCPR_BUILD_TESTS=OFF"
+    "-DCPR_BUILD_TESTS_SSL=OFF"
     "-DBUILD_SHARED_LIBS=${if static then "OFF" else "ON"}"
   ];
   # For whatever reason, the .cmake file needed for other projects to find the lib is not installed
