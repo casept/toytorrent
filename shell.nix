@@ -13,6 +13,7 @@ in pkgs.mkShell {
     pkgs.extra-cmake-modules
     pkgs.cmake-format
     pkgs.pkgconfig
+    pkgs.ninja
     pkgs.cppcheck
     pkgs.gtest
     pkgs.clang-tools

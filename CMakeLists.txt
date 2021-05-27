@@ -1,34 +1,32 @@
 # Semi-recent, I don't want to deal with outdated distro BS
 cmake_minimum_required(VERSION 3.15)
 
-# Forbid in-source builds
-if("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
-  message(
-    FATAL_ERROR
-      "In-source builds are disabled.
-    Please create a subfolder and use `cmake ..` inside it.
-    NOTE: cmake will now create CMakeCache.txt and CMakeFiles/*.
-          You must delete them, or cmake will refuse to work.")
-endif()
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+
+# Fix stuff that's broken by default
+include(ForbidInSource)
+include(SetBuildType)
 
 # Source files used both in the program and tests
 list(APPEND SHARED_FILES "src/bencode_parser.cpp" "src/metainfo.cpp"
      "src/tracker.cpp" "src/peer.cpp")
+# Source files only used in the main program, but not tests
+list(APPEND EXE_FILES "src/main.cpp")
+# Source files only used for tests
+list(APPEND TEST_SOURCE_FILES "src/test/main.cpp" "src/test/bencode_parser.cpp"
+     "src/test/metainfo.cpp" "src/test/tracker.cpp")
 
 project(
   toytorrent
   VERSION 0.1
   DESCRIPTION "A toy torrent client"
   LANGUAGES CXX)
-# Source files only used in the main program, but not tests
-list(APPEND EXE_FILES "src/main.cpp")
 add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
 
 # We want ISO C++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-# TODO: Add -Werror once bin2cpp no longer adds unneeded semicolons
 add_compile_options(-Wall -Wextra -Wpedantic)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
@@ -44,19 +42,6 @@ install(
   CONFIGURATIONS Release
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# Boilerplate for setting the build type
-set(default_build_type "Release")
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(
-    STATUS
-      "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE
-      "${default_build_type}"
-      CACHE STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
-endif()
-
 # Test setup
 if(BUILD_TESTING)
   # In order for the test binary to run out-of-tree we need to include test
@@ -66,11 +51,6 @@ if(BUILD_TESTING)
   list(APPEND TEST_DATA_FILES "src/test/testdata/lubuntu-16.04.torrent")
   cmrc_add_resource_library(test_resources WHENCE "src/test/testdata/"
                             ${TEST_DATA_FILES})
-
-  # Source files only used for tests
-  list(APPEND TEST_SOURCE_FILES "src/test/main.cpp"
-       "src/test/bencode_parser.cpp" "src/test/metainfo.cpp"
-       "src/test/tracker.cpp")
 
   enable_testing()
   include(GoogleTest)
