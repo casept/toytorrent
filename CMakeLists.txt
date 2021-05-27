@@ -31,11 +31,10 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 # 3rd-party deps
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 find_package(Botan2 2.0 REQUIRED)
 find_package(CPR REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2)
-target_link_libraries(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2)
+find_package(fmt REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2 fmt::fmt)
 
 install(
   TARGETS ${PROJECT_NAME}
@@ -57,9 +56,8 @@ if(BUILD_TESTING)
   add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES} ${SHARED_FILES})
 
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
-  target_include_directories(${PROJECT_NAME}_test PRIVATE cpr Botan2::Botan2)
   target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest test_resources cpr
-                                                     Botan2::Botan2)
+                                                     Botan2::Botan2 fmt::fmt)
 
   # Useful to run tests in a different environment than the build (for example,
   # outside the Nix build sandbox so we can talk to a real tracker)

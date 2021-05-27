@@ -28,7 +28,7 @@ class TrackerCommunicator {
     TrackerCommunicator() = delete;
     // Create a TrackerCommunicator to talk with the given tracker.
     explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id,
-                                 std::string infohash);
+                                 std::string trunc_infohash);
     // Update our statistics about uploaded and downloaded data
     // which are sent to the tracker.
     void set_data_downloaded(std::uint64_t num_bytes);

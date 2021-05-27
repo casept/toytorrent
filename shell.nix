@@ -9,6 +9,8 @@ in pkgs.mkShell {
   CMAKE_PREFIX_PATH = "${pkgs.curlFull}";
   buildInputs = [
     # Build tooling
+    pkgs.clang_11
+    pkgs.clang-tools
     pkgs.cmake
     pkgs.extra-cmake-modules
     pkgs.cmake-format
@@ -16,12 +18,12 @@ in pkgs.mkShell {
     pkgs.ninja
     pkgs.cppcheck
     pkgs.gtest
-    pkgs.clang-tools
 
     # Libraries we depend on
     pkgs.botan2
     pkgs.curlFull
     (pkgs.callPackage ./nix/pkgs/cpr { })
+    pkgs.fmt
 
     # Nix-specific
     pkgs.niv

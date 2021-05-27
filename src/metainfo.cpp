@@ -24,7 +24,8 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     auto info_dict = info.dict.value();
     // We need this to compute the infohash later
     m_bencoded_info = top_level_dict.find("info")->second.as_raw_bytes();
-    m_bencoded_info.push_back('e');
+    // FIXME: Figure out why another e sneaks up on us here
+    m_bencoded_info.pop_back();
 
     m_piece_length = info_dict.find("piece length")->second.integer.value();
     // TODO: Handle the directory case
@@ -68,6 +69,8 @@ std::string MetaInfo::infohash() {
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
     const auto hash_vec =
         hasher.get()->process(reinterpret_cast<uint8_t*>(this->m_bencoded_info.data()), this->m_bencoded_info.size());
-    const auto hash = Botan::hex_encode(hash_vec);
+    const auto hash = Botan::hex_encode(hash_vec, true);
     return hash;
 }
+
+std::string MetaInfo::truncated_infohash() { return this->infohash().substr(0, 20); }

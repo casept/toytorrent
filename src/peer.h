@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string>
 
-constexpr std::size_t peer_id_length{20};
+constexpr std::size_t peer_id_length{21};
 typedef std::array<char, peer_id_length> PeerID;
 
 class Peer {

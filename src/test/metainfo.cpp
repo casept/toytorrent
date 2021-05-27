@@ -19,7 +19,6 @@ TEST(Metainfo, parse_single_file_torrent) {
     const std::int64_t expected_piece_length{524288};
     const std::size_t expected_num_pieces{1760};
     const std::string expected_infohash{"C1AA77DEA674D71FBD85559034B6082B8434D36E"};
-
     // The torrent file to test against is embedded in the executable
     auto fs = cmrc::test_resources::get_filesystem();
     const auto torrent_file = fs.open("lubuntu-16.04.torrent");

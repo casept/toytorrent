@@ -1,6 +1,7 @@
 #include "tracker.h"
 
 #include <cpr/cpr.h>
+#include <fmt/core.h>
 
 #include <cstdint>
 #include <deque>
@@ -11,14 +12,14 @@
 #include "peer.h"
 
 TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id,
-                                         std::string infohash) {
+                                         std::string trunc_infohash) {
     m_data_downloaded = {0};
     m_data_uploaded = {0};
     m_data_left = {0};
     m_announce_url = {announce_url};
     m_peer_id = {our_peer_id};
     m_port = {our_port};
-    m_info_hash = {infohash};
+    m_info_hash = {trunc_infohash};
 }
 
 BEncodeObject get_object_from_dict_or_throw(std::string key, std::map<std::string, BEncodeObject> dict,
@@ -67,7 +68,7 @@ std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_to_tracker
                                         {"event", event},
                                         {"compact", "0"}};
     cpr::Response r = cpr::Get(cpr::Url{m_announce_url}, p);
-    auto queue = std::deque(r.text.begin(), r.text.end());
+    auto queue = std::deque<char>(r.text.begin(), r.text.end());
     auto parser = BEncodeParser(queue);
     auto resp_object_maybe_none = parser.next();
 
@@ -87,7 +88,7 @@ std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_to_tracker
     auto failure_reason = resp_dict.find("failure reason");
     if (failure_reason != resp_dict.end()) {
         // The key exists, meaning we have a reason
-        auto err = failure_reason->second.str.value();
+        auto err = fmt::format("Tracker indicated failure: {}", failure_reason->second.str.value());
         throw std::runtime_error(err);
     }
 
