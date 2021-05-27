@@ -30,29 +30,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 # TODO: Add -Werror once bin2cpp no longer adds unneeded semicolons
 add_compile_options(-Wall -Wextra -Wpedantic)
-# Apparently cmake is so broken that C++17 doesn't actually get passed to the
-# compiler without this
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
-# CPR setup
-find_package(CURL REQUIRED)
+# 3rd-party deps
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+find_package(Botan2 2.0 REQUIRED)
 find_package(CPR REQUIRED)
+target_include_directories(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2)
+target_link_libraries(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2)
 
-# Botan setup
-set(BOTAN_DIR "cmake/")
-find_package(BOTAN REQUIRED)
-
-# Library headers used both in the program and tests
-list(APPEND SHARED_HEADERS ${CURL_INCLUDE_DIRS} ${CPR_INCLUDE_DIRS}
-     ${BOTAN_INCLUDE_DIRS})
-# Libraries used both in the program and tests
-list(APPEND SHARED_LIBS ${CURL_LIBRARIES} ${CPR_LIBRARIES} ${BOTAN_LIBRARIES})
-
-# Actually configure the target Don't move this around, position in the file was
-# determined by trial and error Seriously, who thought an imperative build
-# system was a good idea, aaarrrrgh!!!
-target_include_directories(${PROJECT_NAME} PRIVATE ${SHARED_HEADERS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${SHARED_LIBS})
 install(
   TARGETS ${PROJECT_NAME}
   CONFIGURATIONS Release
@@ -68,8 +54,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
       "${default_build_type}"
       CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-                                               "MinSizeRel" "RelWithDebInfo")
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
 
 # Test setup
@@ -92,9 +77,9 @@ if(BUILD_TESTING)
   add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES} ${SHARED_FILES})
 
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
-  target_include_directories(${PROJECT_NAME}_test PRIVATE ${SHARED_HEADERS})
-  target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest test_resources
-                                                     ${SHARED_LIBS})
+  target_include_directories(${PROJECT_NAME}_test PRIVATE cpr Botan2::Botan2)
+  target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest test_resources cpr
+                                                     Botan2::Botan2)
 
   # Useful to run tests in a different environment than the build (for example,
   # outside the Nix build sandbox so we can talk to a real tracker)
