@@ -39,7 +39,7 @@ class MetaInfo {
     // Parses the data in the queue into a MetaInfo instance
     explicit MetaInfo(std::deque<char> in);
     // Computes the infohash for this MetaInfo.
-    std::string infohash();
+    std::string infohash() const;
     // Computes the infohash for this MetaInfo, truncated to 20 bytes.
-    std::string truncated_infohash();
+    std::string truncated_infohash() const;
 };

@@ -65,12 +65,13 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     }
 }
 
-std::string MetaInfo::infohash() {
+std::string MetaInfo::infohash() const {
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
-    const auto hash_vec =
-        hasher.get()->process(reinterpret_cast<uint8_t*>(this->m_bencoded_info.data()), this->m_bencoded_info.size());
+    // const_cast should be fine here because the buffer isn't touched
+    auto data = const_cast<char*>(this->m_bencoded_info.data());
+    const auto hash_vec = hasher.get()->process(reinterpret_cast<uint8_t*>(data), this->m_bencoded_info.size());
     const auto hash = Botan::hex_encode(hash_vec, true);
     return hash;
 }
 
-std::string MetaInfo::truncated_infohash() { return this->infohash().substr(0, 20); }
+std::string MetaInfo::truncated_infohash() const { return this->infohash().substr(0, 20); }

@@ -28,32 +28,48 @@ std::ifstream parse_args(int argc, char** argv) {
     return f;
 };
 
-int main(int argc, char** argv) {
+MetaInfo parse(std::ifstream& file) {
     // Read the torrent file
-    auto f = parse_args(argc, argv);
+
     std::deque<char> data{};
     while (true) {
-        const char byte = f.get();
-        if (f.eof()) {
+        const char byte = file.get();
+        if (file.eof()) {
             break;
         }
         data.push_back(byte);
     }
-    if (f.bad()) {
+    if (file.bad()) {
         std::cerr << "Failed to read .torrent file!\n";
         exit(EXIT_FAILURE);
     }
-    f.close();
+    file.close();
 
     auto metainfo = MetaInfo(data);
-    // Contact tracker to ask for peers
-    const PeerID peer_id = {"ffffffffffffffffffff"};
-    fmt::print("File infohash (truncated): {}\n", metainfo.truncated_infohash());
+    return metainfo;
+}
 
-    auto tracker = TrackerCommunicator(metainfo.m_primary_tracker_url, 1337, peer_id, metainfo.truncated_infohash());
-    const auto [peers, next_checkin] = tracker.send_started();
-    for (const auto peer : peers) {
-        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.data(), peer.m_ip, peer.m_port);
+void download(const MetaInfo torrent) {
+    // Contact tracker to ask for peers
+    const PeerID peer_id = PeerID();
+    fmt::print("File infohash (truncated): {}\n", torrent.truncated_infohash());
+
+    auto tracker = TrackerCommunicator(torrent.m_primary_tracker_url, 1337, peer_id, torrent.truncated_infohash());
+    const auto [initial_peers, initial_next_checkin] = tracker.send_started();
+    fmt::print("Tracker told us to check in again in {}\n", initial_next_checkin);
+    for (const auto peer : initial_peers) {
+        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
     }
+    const auto [peers, next_checkin] = tracker.send_update();
+    for (const auto peer : peers) {
+        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
+    }
+}
+
+int main(int argc, char** argv) {
+    std::ifstream f = parse_args(argc, argv);
+    const auto torrent = parse(f);
+    download(torrent);
+
     // TODO: Actually download
 }

@@ -14,7 +14,7 @@ class TrackerCommunicator {
    private:
     std::string m_announce_url;
     std::string m_info_hash;
-    std::array<char, peer_id_length> m_peer_id;
+    std::string m_peer_id;
     std::uint64_t m_data_downloaded;
     std::uint64_t m_data_uploaded;
     std::uint64_t m_data_left;

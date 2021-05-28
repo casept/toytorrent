@@ -1,4 +1,6 @@
 .vscode/
+.cache/
 build/
 result/
 .tmp-arion*.yml
+compile-commands.json

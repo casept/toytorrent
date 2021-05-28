@@ -5,7 +5,19 @@
 #include <string>
 
 constexpr std::size_t peer_id_length{21};
-typedef std::array<char, peer_id_length> PeerID;
+
+class PeerID {
+   public:
+    // Generate a new ID at random.
+    PeerID();
+    // Generate a new ID based on given 20-byte (plus \0-terminator) string.
+    PeerID(const std::array<char, peer_id_length> str);
+    // Get string representation.
+    std::string as_string() const;
+
+   private:
+    std::array<char, peer_id_length> m_id;
+};
 
 class Peer {
    public:
@@ -14,5 +26,5 @@ class Peer {
     PeerID m_id;
 
     Peer() = delete;
-    Peer(PeerID id, std::string const &ip, std::uint32_t port);
+    Peer(const PeerID id, std::string const &ip, const std::uint32_t port);
 };
