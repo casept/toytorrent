@@ -6,8 +6,8 @@
 #include <string>
 #include <vector>
 
-#include "bencode_parser.h"
-#include "peer.h"
+#include "bencode_parser.hpp"
+#include "peer.hpp"
 
 // This class abstracts away communication with a particular tracker.
 class TrackerCommunicator {

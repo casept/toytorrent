@@ -1,4 +1,4 @@
-#include "peer.h"
+#include "peer.hpp"
 
 #include <botan-2/botan/auto_rng.h>
 

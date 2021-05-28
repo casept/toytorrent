@@ -1,8 +1,8 @@
-#include "../tracker.h"
+#include "../tracker.hpp"
 
 #include <gtest/gtest.h>
 
-#include "../metainfo.h"
+#include "../metainfo.hpp"
 
 /*
 These are integration tests, and are designed to be run with a tracker reachable at a fixed address.

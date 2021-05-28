@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "metainfo.h"
-#include "tracker.h"
+#include "metainfo.hpp"
+#include "tracker.hpp"
 
 // Returns the torrent file, or exits if path not provided or invalid.
 std::ifstream parse_args(int argc, char** argv) {

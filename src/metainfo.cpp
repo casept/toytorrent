@@ -1,4 +1,4 @@
-#include "metainfo.h"
+#include "metainfo.hpp"
 
 #include <botan-2/botan/hash.h>
 #include <botan-2/botan/hex.h>
@@ -9,7 +9,7 @@
 #include <deque>
 #include <map>
 
-#include "bencode_parser.h"
+#include "bencode_parser.hpp"
 
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary

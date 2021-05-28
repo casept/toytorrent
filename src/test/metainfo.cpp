@@ -1,4 +1,4 @@
-#include "../metainfo.h"
+#include "../metainfo.hpp"
 
 #include <errno.h>
 #include <gtest/gtest.h>

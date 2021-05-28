@@ -3,4 +3,4 @@
 build/
 result/
 .tmp-arion*.yml
-compile-commands.json
+compile_commands.json

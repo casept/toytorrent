@@ -1,4 +1,4 @@
-#include "tracker.h"
+#include "tracker.hpp"
 
 #include <cpr/cpr.h>
 #include <fmt/core.h>
@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "bencode_parser.h"
-#include "peer.h"
+#include "bencode_parser.hpp"
+#include "peer.hpp"
 
 TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id,
                                          std::string trunc_infohash) {
