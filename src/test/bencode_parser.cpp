@@ -7,6 +7,8 @@
 #include <map>
 #include <optional>
 
+using namespace tt;
+
 TEST(BEncode, parse_string) {
     const auto test_string = std::string{"3:foogarbage"};
     const auto expected = std::string{"foo"};

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "metainfo.hpp"
+#include "torrent.hpp"
 #include "tracker.hpp"
 
 // Returns the torrent file, or exits if path not provided or invalid.
@@ -28,7 +29,7 @@ std::ifstream parse_args(int argc, char** argv) {
     return f;
 };
 
-MetaInfo parse(std::ifstream& file) {
+tt::MetaInfo file_to_metainfo(std::ifstream& file) {
     // Read the torrent file
 
     std::deque<char> data{};
@@ -45,31 +46,12 @@ MetaInfo parse(std::ifstream& file) {
     }
     file.close();
 
-    auto metainfo = MetaInfo(data);
-    return metainfo;
-}
-
-void download(const MetaInfo torrent) {
-    // Contact tracker to ask for peers
-    const PeerID peer_id = PeerID();
-    fmt::print("File infohash (truncated): {}\n", torrent.truncated_infohash());
-
-    auto tracker = TrackerCommunicator(torrent.m_primary_tracker_url, 1337, peer_id, torrent.truncated_infohash());
-    const auto [initial_peers, initial_next_checkin] = tracker.send_started();
-    fmt::print("Tracker told us to check in again in {}\n", initial_next_checkin);
-    for (const auto peer : initial_peers) {
-        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
-    }
-    const auto [peers, next_checkin] = tracker.send_update();
-    for (const auto peer : peers) {
-        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
-    }
+    return tt::MetaInfo(data);
 }
 
 int main(int argc, char** argv) {
     std::ifstream f = parse_args(argc, argv);
-    const auto torrent = parse(f);
-    download(torrent);
-
-    // TODO: Actually download
+    const auto metainfo = file_to_metainfo(f);
+    auto torrent = tt::Torrent(metainfo);
+    torrent.download();
 }

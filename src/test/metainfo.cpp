@@ -9,6 +9,8 @@
 #include <fstream>
 #include <string>
 
+using namespace tt;
+
 CMRC_DECLARE(test_resources);
 
 TEST(Metainfo, parse_single_file_torrent) {

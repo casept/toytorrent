@@ -14,6 +14,7 @@
 #include <variant>
 #include <vector>
 
+namespace tt {
 // Takes a bencoded string out of the stream.
 std::string take_bencode_string(std::deque<char> &in) {
     std::string len_as_str{""};
@@ -187,3 +188,4 @@ std::optional<BEncodeObject> BEncodeParser::next() {
         return {BEncodeObject(m_data)};
     };
 }
+}  // namespace tt

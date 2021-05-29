@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 
+namespace tt {
 PeerID::PeerID() {
     // Generate 20 random printable ASCII chars
     this->m_id = {'\0'};
@@ -21,12 +22,13 @@ PeerID::PeerID() {
     this->m_id[20] = '\0';
 }
 
-PeerID::PeerID(const std::array<char, peer_id_length> str) { std::copy_n(str.begin(), 21, this->m_id.begin()); }
+PeerID::PeerID(const std::array<char, Peer_ID_Length>& str) { std::copy(str.begin(), str.end(), this->m_id.begin()); }
 
 std::string PeerID::as_string() const { return std::string(this->m_id.data()); }
 
-Peer::Peer(const PeerID id, std::string const &ip, const std::uint32_t port) {
+Peer::Peer(const PeerID& id, std::string const& ip, const std::uint32_t port) {
     m_id = id;
     m_ip = ip;
     m_port = port;
 }
+}  // namespace tt

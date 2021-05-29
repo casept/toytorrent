@@ -10,8 +10,8 @@
 
 #include "bencode_parser.hpp"
 #include "peer.hpp"
-
-TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, PeerID our_peer_id,
+namespace tt {
+TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const PeerID& our_peer_id,
                                          std::string trunc_infohash) {
     m_data_downloaded = {0};
     m_data_uploaded = {0};
@@ -49,7 +49,7 @@ std::vector<Peer> bencode_peer_list_to_peers(std::vector<BEncodeObject> list) {
             get_object_from_dict_or_throw("port", peer_dict, "Tracker violated protocol: all peers must have port");
         std::uint32_t peer_port = static_cast<std::int64_t>(peer_port_obj.integer.value());
         PeerID peer_id;
-        std::copy_n(peer_id_obj.str.value().data(), peer_id_length, peer_id.as_string().begin());
+        std::copy_n(peer_id_obj.str.value().data(), Peer_ID_Length, peer_id.as_string().begin());
         peers.push_back(Peer(peer_id, peer_ip_obj.str.value(), peer_port));
     }
     return peers;
@@ -123,3 +123,4 @@ std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_started() 
 std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_stopped() { return send_to_tracker("stopped"); }
 
 std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_update() { return send_to_tracker(""); }
+}  // namespace tt

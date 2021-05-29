@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+namespace tt {
 // The various kinds of BEncode-representable objects
 enum class BEncodeObjectType { String, Integer, Dict, List };
 
@@ -54,3 +55,4 @@ class BEncodeParser {
     // Returns the next member, if available, none otherwise
     std::optional<BEncodeObject> next();
 };
+}  // namespace tt

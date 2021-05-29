@@ -10,7 +10,7 @@
 #include <map>
 
 #include "bencode_parser.hpp"
-
+namespace tt {
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary
     auto top_level_parser = BEncodeParser(in);
@@ -53,14 +53,14 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     m_pieces = {};
     // All the hashes are one long string rather than a list of smaller ones
     auto pieces = info_dict.find("pieces")->second.str.value();
-    if ((pieces.length() % sha1_len) != 0) {
+    if ((pieces.length() % Piece_SHA1_Len) != 0) {
         throw std::runtime_error{"Pieces list must only contain whole hashes"};
     }
-    int64_t num_pieces = pieces.length() / sha1_len;
+    int64_t num_pieces = pieces.length() / Piece_SHA1_Len;
     for (std::int64_t i = 0; i < num_pieces; i++) {
-        std::array<char, sha1_len> hash{};
-        std::copy_n(pieces.begin(), sha1_len, hash.begin());
-        pieces.erase(0, sha1_len);
+        std::array<char, Piece_SHA1_Len> hash{};
+        std::copy_n(pieces.begin(), Piece_SHA1_Len, hash.begin());
+        pieces.erase(0, Piece_SHA1_Len);
         m_pieces.push_back(hash);
     }
 }
@@ -75,3 +75,4 @@ std::string MetaInfo::infohash() const {
 }
 
 std::string MetaInfo::truncated_infohash() const { return this->infohash().substr(0, 20); }
+}  // namespace tt

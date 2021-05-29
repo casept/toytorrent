@@ -7,13 +7,14 @@
 #include <string>
 #include <vector>
 
+namespace tt {
 // TODO: Implement multifile torrents
 
 // What kind of download the metainfo describes.
 enum class DownloadType { SingleFile, Directory };
 
-// The length of a SHA1 hash in bytes
-constexpr size_t sha1_len = 20;
+// The length of a piece SHA1 hash in bytes
+constexpr size_t Piece_SHA1_Len = 20;
 
 class MetaInfo {
     MetaInfo() = delete;
@@ -35,7 +36,7 @@ class MetaInfo {
     std::optional<std::int64_t> m_file_length;
     // Mapping of piece indices to their SHA1 hashes.
     // The piece index is the index into the vector.
-    std::vector<std::array<char, sha1_len>> m_pieces;
+    std::vector<std::array<char, Piece_SHA1_Len>> m_pieces;
     // Parses the data in the queue into a MetaInfo instance
     explicit MetaInfo(std::deque<char> in);
     // Computes the infohash for this MetaInfo.
@@ -43,3 +44,4 @@ class MetaInfo {
     // Computes the infohash for this MetaInfo, truncated to 20 bytes.
     std::string truncated_infohash() const;
 };
+}  // namespace tt

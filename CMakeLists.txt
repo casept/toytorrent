@@ -8,8 +8,14 @@ include(ForbidInSource)
 include(SetBuildType)
 
 # Source files used both in the program and tests
-list(APPEND SHARED_FILES "src/bencode_parser.cpp" "src/metainfo.cpp"
-     "src/tracker.cpp" "src/peer.cpp")
+list(
+  APPEND
+  SHARED_FILES
+  "src/bencode_parser.cpp"
+  "src/metainfo.cpp"
+  "src/tracker.cpp"
+  "src/peer.cpp"
+  "src/torrent.cpp")
 # Source files only used in the main program, but not tests
 list(APPEND EXE_FILES "src/main.cpp")
 # Source files only used for tests
@@ -27,7 +33,7 @@ add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-add_compile_options(-Wall -Wextra -Wpedantic)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 # 3rd-party deps
@@ -56,6 +62,7 @@ if(BUILD_TESTING)
   add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES} ${SHARED_FILES})
 
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
+  target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
   target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest test_resources cpr
                                                      Botan2::Botan2 fmt::fmt)
 

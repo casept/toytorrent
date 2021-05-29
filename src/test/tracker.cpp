@@ -4,6 +4,8 @@
 
 #include "../metainfo.hpp"
 
+using namespace tt;
+
 /*
 These are integration tests, and are designed to be run with a tracker reachable at a fixed address.
 The easiest way to get them running is using the provided arion-compose.nix to create a docker network
