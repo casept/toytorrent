@@ -2,30 +2,49 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <vector>
 
-namespace tt {
-constexpr std::size_t Peer_ID_Length{21};
+#include "smolsocket.hpp"
 
-class PeerID {
+namespace tt::peer {
+constexpr std::size_t ID_Length{21};
+
+// A per-torrent peer identifier
+class ID {
    public:
     // Generate a new ID at random.
-    PeerID();
+    ID();
     // Generate a new ID based on given 20-byte (plus \0-terminator) string.
-    PeerID(const std::array<char, Peer_ID_Length>& str);
+    ID(const std::array<char, ID_Length>& str);
     // Get string representation.
     std::string as_string() const;
 
    private:
-    std::array<char, Peer_ID_Length> m_id;
+    std::array<char, ID_Length> m_id;
+};
+
+// An active connection to a peer.
+class Conn {
+   public:
+    bool m_we_choked = false;
+    bool m_we_interested = false;
+    smolsocket::Sock m_sock;
+    Conn(smolsocket::Sock m_sock);
 };
 
 class Peer {
+   private:
+    std::optional<Conn> m_conn{};
+
    public:
     std::string m_ip;
     std::uint32_t m_port;
-    PeerID m_id;
+    ID m_id;
 
-    Peer(const PeerID& id, std::string const& ip, const std::uint32_t port);
+    Peer(const ID& id, std::string const& ip, const std::uint32_t port);
+    // Establish a connection to this peer.
+    void connect();
 };
-}  // namespace tt
+}  // namespace tt::peer

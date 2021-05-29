@@ -15,7 +15,8 @@ list(
   "src/metainfo.cpp"
   "src/tracker.cpp"
   "src/peer.cpp"
-  "src/torrent.cpp")
+  "src/torrent.cpp"
+  "src/smolsocket.cpp")
 # Source files only used in the main program, but not tests
 list(APPEND EXE_FILES "src/main.cpp")
 # Source files only used for tests

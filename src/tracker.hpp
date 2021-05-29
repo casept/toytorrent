@@ -8,7 +8,7 @@
 
 #include "bencode_parser.hpp"
 #include "peer.hpp"
-namespace tt {
+namespace tt::tracker {
 // This class abstracts away communication with a particular tracker.
 class TrackerCommunicator {
    private:
@@ -22,12 +22,12 @@ class TrackerCommunicator {
     // Send the given event to the tracker with the data in this class
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
-    std::tuple<std::vector<Peer>, std::int64_t> send_to_tracker(const std::string& event);
+    std::tuple<std::vector<peer::Peer>, std::int64_t> send_to_tracker(const std::string& event);
 
    public:
     TrackerCommunicator() = delete;
     // Create a TrackerCommunicator to talk with the given tracker.
-    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const PeerID& our_peer_id,
+    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const peer::ID& our_peer_id,
                                  std::string trunc_infohash);
     // Update our statistics about uploaded and downloaded data
     // which are sent to the tracker.
@@ -38,22 +38,22 @@ class TrackerCommunicator {
     // Tell the tracker that our download is finished.
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
-    std::tuple<std::vector<Peer>, std::int64_t> send_completed();
+    std::tuple<std::vector<peer::Peer>, std::int64_t> send_completed();
 
     // Tell the tracker that we've just started our download.
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
-    std::tuple<std::vector<Peer>, std::int64_t> send_started();
+    std::tuple<std::vector<peer::Peer>, std::int64_t> send_started();
 
     // Tell the tracker that we've stopped downloading.
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
-    std::tuple<std::vector<Peer>, std::int64_t> send_stopped();
+    std::tuple<std::vector<peer::Peer>, std::int64_t> send_stopped();
 
     // Tell the tracker that we just want more peers.
     // Returns a vector of peers the tracker gave us if successful.
     // Causes an exception if not.
-    std::tuple<std::vector<Peer>, std::int64_t> send_update();
+    std::tuple<std::vector<peer::Peer>, std::int64_t> send_update();
 };
 
 struct TrackerResponse {
@@ -68,4 +68,4 @@ struct TrackerResponse {
     // TODO: Represent better
     BEncodeObject peers;
 };
-}  // namespace tt
+}  // namespace tt::tracker

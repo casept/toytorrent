@@ -17,14 +17,14 @@ Piece::Piece(size_t size, std::array<char, Piece_SHA1_Len> expected_hash) {
     std::copy(expected_hash.begin(), expected_hash.end(), this->m_expected_hash.begin());
 }
 
-Torrent::Torrent(const MetaInfo &parsed_file) : m_our_peer(Peer(PeerID(), "127.0.0.1", 1337)) {
+Torrent::Torrent(const MetaInfo &parsed_file) : m_us_peer(peer::Peer(peer::ID(), "127.0.0.1", 1337)) {
     // Our peer ID is already initialized above
     // TODO: Get IP and port (can we ask the tracker for IP?)
 
     // Initialize trackers (for now, just one)
     this->m_trackers = {};
-    auto tracker = TrackerCommunicator(parsed_file.m_primary_tracker_url, this->m_our_peer.m_port,
-                                       this->m_our_peer.m_id, parsed_file.truncated_infohash());
+    auto tracker = tracker::TrackerCommunicator(parsed_file.m_primary_tracker_url, this->m_us_peer.m_port,
+                                                this->m_us_peer.m_id, parsed_file.truncated_infohash());
     this->m_trackers.push_back(tracker);
 
     // Initialize pieces
@@ -44,9 +44,21 @@ void Torrent::download() {
     for (const auto &peer : initial_peers) {
         fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
     }
-    const auto [peers, next_checkin] = tracker.send_update();
+
+    // Periodic tracker checkin
+    auto [peers, next_checkin] = tracker.send_update();
     for (const auto &peer : peers) {
         fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
     }
+
+    // Handshake with all peers
+    // TODO: Send keepalives to all peers periodically
+    for (peer::Peer &peer : peers) {
+        fmt::print("Connecting to peer: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
+        peer.connect();
+    }
+
+    // Tracker checkout
+    tracker.send_stopped();
 }
 }  // namespace tt

@@ -10,8 +10,9 @@
 
 #include "bencode_parser.hpp"
 #include "peer.hpp"
-namespace tt {
-TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const PeerID& our_peer_id,
+
+namespace tt::tracker {
+TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const peer::ID& our_peer_id,
                                          std::string trunc_infohash) {
     m_data_downloaded = {0};
     m_data_uploaded = {0};
@@ -33,8 +34,8 @@ BEncodeObject get_object_from_dict_or_throw(std::string key, std::map<std::strin
     return obj;
 }
 
-std::vector<Peer> bencode_peer_list_to_peers(std::vector<BEncodeObject> list) {
-    std::vector<Peer> peers{};
+std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<BEncodeObject> list) {
+    std::vector<peer::Peer> peers{};
     for (BEncodeObject const& peer_entry : list) {
         if (!peer_entry.dict.has_value()) {
             auto err = "Tracker violated protocol: peer entry is not a bencoded dictionary";
@@ -48,15 +49,15 @@ std::vector<Peer> bencode_peer_list_to_peers(std::vector<BEncodeObject> list) {
         auto peer_port_obj =
             get_object_from_dict_or_throw("port", peer_dict, "Tracker violated protocol: all peers must have port");
         std::uint32_t peer_port = static_cast<std::int64_t>(peer_port_obj.integer.value());
-        PeerID peer_id;
-        std::copy_n(peer_id_obj.str.value().data(), Peer_ID_Length, peer_id.as_string().begin());
-        peers.push_back(Peer(peer_id, peer_ip_obj.str.value(), peer_port));
+        peer::ID peer_id;
+        std::copy_n(peer_id_obj.str.value().data(), peer::ID_Length, peer_id.as_string().begin());
+        peers.push_back(peer::Peer(peer_id, peer_ip_obj.str.value(), peer_port));
     }
     return peers;
 }
 
 // TODO: Quite a bit of error handling is missing
-std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_to_tracker(const std::string& event) {
+std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_tracker(const std::string& event) {
     // Perform the request
     // TODO: Implement support for compact representation, because many trackers mandate it
     cpr::Parameters p = cpr::Parameters{{"info_hash", m_info_hash},
@@ -111,16 +112,20 @@ std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_to_tracker
     auto peers_list = peers_mapret->second.list.value();
     auto peers = bencode_peer_list_to_peers(peers_list);
 
-    return std::tuple<std::vector<Peer>, std::int64_t>(peers, interval);
+    return std::tuple<std::vector<peer::Peer>, std::int64_t>(peers, interval);
 }
 
-std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_completed() {
+std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_completed() {
     return send_to_tracker("completed");
 }
 
-std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_started() { return send_to_tracker("started"); }
+std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_started() {
+    return send_to_tracker("started");
+}
 
-std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_stopped() { return send_to_tracker("stopped"); }
+std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_stopped() {
+    return send_to_tracker("stopped");
+}
 
-std::tuple<std::vector<Peer>, std::int64_t> TrackerCommunicator::send_update() { return send_to_tracker(""); }
-}  // namespace tt
+std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_update() { return send_to_tracker(""); }
+}  // namespace tt::tracker

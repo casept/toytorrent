@@ -39,9 +39,9 @@ class Torrent {
     // All pieces of the torrent.
     std::vector<Piece> m_pieces;
     // All trackers tracking this torrent.
-    std::vector<TrackerCommunicator> m_trackers;
+    std::vector<tracker::TrackerCommunicator> m_trackers;
     // Our peer identity.
-    Peer m_our_peer;
+    peer::Peer m_us_peer;
 
    public:
     // Create a torrent from the given parsed torrent file.
