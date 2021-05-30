@@ -17,7 +17,8 @@ Piece::Piece(size_t size, std::array<char, Piece_SHA1_Len> expected_hash) {
     std::copy(expected_hash.begin(), expected_hash.end(), this->m_expected_hash.begin());
 }
 
-Torrent::Torrent(const MetaInfo &parsed_file) : m_us_peer(peer::Peer(peer::ID(), "127.0.0.1", 1337)) {
+Torrent::Torrent(const MetaInfo &parsed_file)
+    : m_metainfo(parsed_file), m_us_peer(peer::Peer(peer::ID(), "178.175.131.100", 1337)) {
     // Our peer ID is already initialized above
     // TODO: Get IP and port (can we ask the tracker for IP?)
 
@@ -51,11 +52,13 @@ void Torrent::download() {
         fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
     }
 
-    // Handshake with all peers
+    // Handshake with all peers that aren't we ourselves
     // TODO: Send keepalives to all peers periodically
     for (peer::Peer &peer : peers) {
-        fmt::print("Connecting to peer: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
-        peer.connect();
+        if (peer.m_id != this->m_us_peer.m_id) {
+            fmt::print("Connecting to peer: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
+            peer.connect(this->m_metainfo.truncated_infohash());
+        }
     }
 
     // Tracker checkout

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "smolsocket.hpp"
@@ -18,6 +19,8 @@ class ID {
     ID();
     // Generate a new ID based on given 20-byte (plus \0-terminator) string.
     ID(const std::array<char, ID_Length>& str);
+    // Equal if the internal ID field is the same.
+    inline bool operator==(const ID& rhs) { return this->m_id == rhs.m_id; };
     // Get string representation.
     std::string as_string() const;
 
@@ -45,6 +48,6 @@ class Peer {
 
     Peer(const ID& id, std::string const& ip, const std::uint32_t port);
     // Establish a connection to this peer.
-    void connect();
+    void connect(const std::string_view& truncated_infohash);
 };
 }  // namespace tt::peer

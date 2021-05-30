@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 
+#include "log.hpp"
 #include "smolsocket.hpp"
 
 namespace tt::peer {
@@ -37,8 +38,32 @@ Peer::Peer(const ID& id, std::string const& ip, const std::uint32_t port) {
     m_port = port;
 }
 
-void Peer::connect() {
-    const std::string addr = fmt::format("{}:{}", this->m_ip, this->m_port);
-    this->m_conn = {{smolsocket::Sock(addr, smolsocket::Proto::TCP)}};
+void Peer::connect(const std::string_view& truncated_infohash) {
+    // Create connection
+    try {
+        const std::string addr = fmt::format("{}:{}", this->m_ip, this->m_port);
+        log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Connecting to peer {}", addr));
+        this->m_conn = {{smolsocket::Sock(addr, smolsocket::Proto::TCP)}};
+    } catch (const smolsocket::Exception& e) {
+        log::log(log::Level::Fatal, log::Subsystem::Peer, fmt::format("Failed to connect: {}", e.what()));
+        exit(EXIT_FAILURE);
+    }
+
+    // Handshake
+    auto& sock = this->m_conn.value().m_sock;
+    auto char_to_bytes = [](char c) { return (uint8_t)c; };
+    std::string bt_proto = "19BitTorrent protocol";
+    std::vector<uint8_t> bt_proto_bytes{};
+    std::transform(bt_proto.begin(), bt_proto.end(), std::back_inserter(bt_proto_bytes), char_to_bytes);
+    try {
+        sock.send(bt_proto_bytes);
+        sock.send({0, 0, 0, 0, 0, 0, 0, 0});  // No extensions
+        std::vector<uint8_t> hash_bytes{};
+        std::transform(truncated_infohash.begin(), truncated_infohash.end(), std::back_inserter(hash_bytes),
+                       char_to_bytes);
+        sock.send(hash_bytes);
+    } catch (const smolsocket::Exception& e) {
+        log::log(log::Level::Warning, log::Subsystem::Peer, fmt::format("Failed to handshake: {}", e.what()));
+    }
 }
 }  // namespace tt::peer

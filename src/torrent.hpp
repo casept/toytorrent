@@ -36,6 +36,8 @@ class Piece {
 // A currently live torrent.
 class Torrent {
    private:
+    // Raw torrent metainfo.
+    MetaInfo m_metainfo;
     // All pieces of the torrent.
     std::vector<Piece> m_pieces;
     // All trackers tracking this torrent.

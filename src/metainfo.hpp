@@ -17,8 +17,6 @@ enum class DownloadType { SingleFile, Directory };
 constexpr size_t Piece_SHA1_Len = 20;
 
 class MetaInfo {
-    MetaInfo() = delete;
-
    private:
     // Used for computing the infohash
     std::vector<char> m_bencoded_info;
@@ -37,8 +35,9 @@ class MetaInfo {
     // Mapping of piece indices to their SHA1 hashes.
     // The piece index is the index into the vector.
     std::vector<std::array<char, Piece_SHA1_Len>> m_pieces;
+
     // Parses the data in the queue into a MetaInfo instance
-    explicit MetaInfo(std::deque<char> in);
+    MetaInfo(std::deque<char> in);
     // Computes the infohash for this MetaInfo.
     std::string infohash() const;
     // Computes the infohash for this MetaInfo, truncated to 20 bytes.
