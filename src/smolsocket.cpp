@@ -26,7 +26,7 @@ Exception::Exception(const std::string_view& msg, const std::optional<int> errno
     }
 }
 
-const char* Exception::what() const throw() { return this->m_msg.c_str(); };
+const char* Exception::what() const throw() { return this->m_msg.c_str(); }
 
 Sock::Sock(const std::string_view& addr, const Proto proto) {
     this->m_proto = proto;
@@ -41,6 +41,7 @@ Sock::Sock(const std::string_view& addr, const Proto proto) {
             break;
         case Proto::UDP:
             hints.ai_socktype = SOCK_DGRAM;
+            break;
         default:
             std::cerr << "smolsocket::Sock::Sock(): Unknown protocol. This is a bug." << std::endl;
             std::exit(EXIT_FAILURE);

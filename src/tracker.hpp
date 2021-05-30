@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "bencode_parser.hpp"
+#include "bencode.hpp"
 #include "peer.hpp"
 namespace tt::tracker {
 // This class abstracts away communication with a particular tracker.
@@ -66,6 +66,6 @@ struct TrackerResponse {
     // How often we're allowed to contact the tracker
     std::int64_t minimum_tracker_request_wait;
     // TODO: Represent better
-    BEncodeObject peers;
+    bencode::Object peers;
 };
 }  // namespace tt::tracker

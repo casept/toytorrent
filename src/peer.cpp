@@ -30,7 +30,7 @@ ID::ID(const std::array<char, ID_Length>& str) { std::copy(str.begin(), str.end(
 
 std::string ID::as_string() const { return std::string(this->m_id.data()); }
 
-Conn::Conn(smolsocket::Sock sock) : m_sock(sock){};
+Conn::Conn(smolsocket::Sock sock) : m_sock(sock) {}
 
 Peer::Peer(const ID& id, std::string const& ip, const std::uint32_t port) {
     m_id = id;

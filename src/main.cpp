@@ -27,7 +27,7 @@ std::ifstream parse_args(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
     return f;
-};
+}
 
 tt::MetaInfo file_to_metainfo(std::ifstream& file) {
     // Read the torrent file

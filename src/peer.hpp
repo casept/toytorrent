@@ -21,6 +21,7 @@ class ID {
     ID(const std::array<char, ID_Length>& str);
     // Equal if the internal ID field is the same.
     inline bool operator==(const ID& rhs) { return this->m_id == rhs.m_id; };
+    inline bool operator!=(const ID& rhs) { return this->m_id != rhs.m_id; };
     // Get string representation.
     std::string as_string() const;
 

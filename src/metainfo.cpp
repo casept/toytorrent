@@ -9,11 +9,11 @@
 #include <deque>
 #include <map>
 
-#include "bencode_parser.hpp"
+#include "bencode.hpp"
 namespace tt {
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary
-    auto top_level_parser = BEncodeParser(in);
+    auto top_level_parser = bencode::Parser(in);
     auto top_level_dict = top_level_parser.next().value().dict.value();
 
     // Primary tracker announce URL

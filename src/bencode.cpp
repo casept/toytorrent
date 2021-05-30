@@ -1,4 +1,4 @@
-#include "bencode_parser.hpp"
+#include "bencode.hpp"
 
 #include <ctype.h>
 
@@ -14,9 +14,9 @@
 #include <variant>
 #include <vector>
 
-namespace tt {
+namespace tt::bencode {
 // Takes a bencoded string out of the stream.
-std::string take_bencode_string(std::deque<char> &in) {
+std::string take_string(std::deque<char> &in) {
     std::string len_as_str{""};
     // Collect numbers until we find the first non-decimal char
     while (true) {
@@ -50,7 +50,7 @@ std::string take_bencode_string(std::deque<char> &in) {
 }
 
 // Takes a bencoded integer out of the stream.
-std::int64_t take_bencode_integer(std::deque<char> &in) {
+std::int64_t take_integer(std::deque<char> &in) {
     std::string str_num{""};
     // Toss the leading i
     in.pop_front();
@@ -70,8 +70,8 @@ std::int64_t take_bencode_integer(std::deque<char> &in) {
     return std::stoll(str_num);
 }
 
-std::map<std::string, BEncodeObject> take_bencode_dict(std::deque<char> &in) {
-    std::map<std::string, BEncodeObject> out{};
+std::map<std::string, Object> take_dict(std::deque<char> &in) {
+    std::map<std::string, Object> out{};
     // Don't want the leading 'd'
     in.pop_front();
     while (true) {
@@ -82,20 +82,20 @@ std::map<std::string, BEncodeObject> take_bencode_dict(std::deque<char> &in) {
             break;
         } else {
             // The dict key (must be a string)
-            auto key = BEncodeObject(in);
-            if (key.type != BEncodeObjectType::String) {
+            auto key = Object(in);
+            if (key.type != ObjectType::String) {
                 throw std::runtime_error{"BEncode dictionary keys must be strings"};
             }
             // The key's value
-            auto value = BEncodeObject(in);
+            auto value = Object(in);
             out.emplace(key.str.value(), value);
         }
     }
     return out;
 }
 
-std::vector<BEncodeObject> take_bencode_list(std::deque<char> &in) {
-    std::vector<BEncodeObject> out{};
+std::vector<Object> take_list(std::deque<char> &in) {
+    std::vector<Object> out{};
     // Don't want the leading 'l'
     in.pop_front();
     // Recursively extract list objects. If an object is followed by an 'e',
@@ -108,31 +108,31 @@ std::vector<BEncodeObject> take_bencode_list(std::deque<char> &in) {
             in.pop_front();
             break;
         } else {
-            out.push_back(BEncodeObject(in));
+            out.push_back(Object(in));
         }
     }
     return out;
 }
 
-bool operator==(const BEncodeObject &lhs, const BEncodeObject &rhs) {
+bool operator==(const Object &lhs, const Object &rhs) {
     if (lhs.type != rhs.type) {
         return false;
     }
     switch (lhs.type) {
-        case BEncodeObjectType::Integer:
+        case ObjectType::Integer:
             return lhs.integer == rhs.integer;
-        case BEncodeObjectType::String:
+        case ObjectType::String:
             return lhs.str == rhs.str;
-        case BEncodeObjectType::Dict:
+        case ObjectType::Dict:
             return lhs.dict == rhs.dict;
-        case BEncodeObjectType::List:
+        case ObjectType::List:
             return lhs.list == rhs.list;
     }
     // Should be unreachable
     return false;
 }
 
-BEncodeObject::BEncodeObject(std::deque<char> &in) {
+Object::Object(std::deque<char> &in) {
     m_raw_bytes = std::vector<char>(in.begin(), in.end());
 
     // The type of a BEncode object depends on the first character.
@@ -146,27 +146,27 @@ BEncodeObject::BEncodeObject(std::deque<char> &in) {
 
     // The first character is a digit -> it's a length-prefixed string
     if (isdigit(first_char)) {
-        type = {BEncodeObjectType::String};
-        str = {std::optional<std::string>{take_bencode_string(in)}};
+        type = {ObjectType::String};
+        str = {std::optional<std::string>{take_string(in)}};
         return;
     }
     // The first character is i -> it's an integer
     switch (first_char) {
         case 'i': {
-            type = {BEncodeObjectType::Integer};
-            integer = {take_bencode_integer(in)};
+            type = {ObjectType::Integer};
+            integer = {take_integer(in)};
             break;
         }
         // The first character is d -> it's a dict
         case 'd': {
-            type = {BEncodeObjectType::Dict};
-            dict = {take_bencode_dict(in)};
+            type = {ObjectType::Dict};
+            dict = {take_dict(in)};
             break;
         }
         // The first character is l -> it's a list
         case 'l': {
-            type = {BEncodeObjectType::List};
-            list = {take_bencode_list(in)};
+            type = {ObjectType::List};
+            list = {take_list(in)};
             break;
         }
         default: {
@@ -177,15 +177,15 @@ BEncodeObject::BEncodeObject(std::deque<char> &in) {
     }
 }
 
-std::vector<char> BEncodeObject::as_raw_bytes() { return m_raw_bytes; }
+std::vector<char> Object::as_raw_bytes() { return m_raw_bytes; }
 
-BEncodeParser::BEncodeParser(const std::deque<char> data) { m_data = data; }
+Parser::Parser(const std::deque<char> data) { m_data = data; }
 
-std::optional<BEncodeObject> BEncodeParser::next() {
+std::optional<Object> Parser::next() {
     if (m_data.empty()) {
         return {};
     } else {
-        return {BEncodeObject(m_data)};
+        return {Object(m_data)};
     };
 }
-}  // namespace tt
+}  // namespace tt::bencode

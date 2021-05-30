@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "bencode_parser.hpp"
+#include "bencode.hpp"
 #include "peer.hpp"
 
 namespace tt::tracker {
@@ -23,8 +23,8 @@ TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t
     m_info_hash = {trunc_infohash};
 }
 
-BEncodeObject get_object_from_dict_or_throw(std::string key, std::map<std::string, BEncodeObject> dict,
-                                            std::string throw_msg) {
+bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::string, bencode::Object> dict,
+                                              std::string throw_msg) {
     auto dict_entry = dict.find(key);
     if (dict_entry == dict.end()) {
         // Key doesn't exist
@@ -34,9 +34,9 @@ BEncodeObject get_object_from_dict_or_throw(std::string key, std::map<std::strin
     return obj;
 }
 
-std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<BEncodeObject> list) {
+std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::Object> list) {
     std::vector<peer::Peer> peers{};
-    for (BEncodeObject const& peer_entry : list) {
+    for (bencode::Object const& peer_entry : list) {
         if (!peer_entry.dict.has_value()) {
             auto err = "Tracker violated protocol: peer entry is not a bencoded dictionary";
             throw std::runtime_error(err);
@@ -70,7 +70,7 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_t
                                         {"compact", "0"}};
     cpr::Response r = cpr::Get(cpr::Url{m_announce_url}, p);
     auto queue = std::deque<char>(r.text.begin(), r.text.end());
-    auto parser = BEncodeParser(queue);
+    auto parser = bencode::Parser(queue);
     auto resp_object_maybe_none = parser.next();
 
     // Sanity check
@@ -79,7 +79,7 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_t
         throw std::runtime_error(err);
     }
     auto resp_object = resp_object_maybe_none.value();
-    if (resp_object.type != BEncodeObjectType::Dict) {
+    if (resp_object.type != bencode::ObjectType::Dict) {
         auto err = std::string("Tracker response must be a bencoded dictionary");
         throw std::runtime_error(err);
     }

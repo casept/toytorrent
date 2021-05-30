@@ -11,7 +11,7 @@ include(SetBuildType)
 list(
   APPEND
   SHARED_FILES
-  "src/bencode_parser.cpp"
+  "src/bencode.cpp"
   "src/metainfo.cpp"
   "src/tracker.cpp"
   "src/peer.cpp"
@@ -21,7 +21,7 @@ list(
 # Source files only used in the main program, but not tests
 list(APPEND EXE_FILES "src/main.cpp")
 # Source files only used for tests
-list(APPEND TEST_SOURCE_FILES "src/test/main.cpp" "src/test/bencode_parser.cpp"
+list(APPEND TEST_SOURCE_FILES "src/test/main.cpp" "src/test/bencode.cpp"
      "src/test/metainfo.cpp" "src/test/tracker.cpp")
 
 project(
