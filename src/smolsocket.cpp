@@ -2,6 +2,7 @@
 
 extern "C" {
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -15,7 +16,15 @@ extern "C" {
 
 namespace smolsocket {
 
-Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
+Exception::Exception(const std::string_view& msg, const std::optional<int> errno_val, const std::optional<int> gai_err)
+    : m_msg(msg) {
+    if (errno_val.has_value()) {
+        this->m_msg.append(strerror(errno_val.value()));
+    }
+    if (gai_err.has_value()) {
+        this->m_msg.append(gai_strerror(gai_err.value()));
+    }
+}
 
 const char* Exception::what() const throw() { return this->m_msg.c_str(); };
 
@@ -43,13 +52,13 @@ Sock::Sock(const std::string_view& addr, const Proto proto) {
     struct addrinfo* res;
     err = getaddrinfo(addr.data(), NULL, &hints, &res);
     if (err != 0) {
-        throw Exception("smolsocket::Sock::Sock(): getaddrinfo() failed");
+        throw Exception("smolsocket::Sock::Sock(): getaddrinfo() failed: ", {}, {err});
     }
 
     // Only return 1st addr for now
     // TODO: Deal with >1
     if (res == NULL) {
-        throw Exception("smolsocket::Sock::Sock(): Lookup result contains no IP addresses");
+        throw Exception("smolsocket::Sock::Sock(): Lookup result contains no IP addresses", {}, {});
     }
     switch (res->ai_family) {
         case AF_INET:
@@ -59,7 +68,7 @@ Sock::Sock(const std::string_view& addr, const Proto proto) {
             this->m_addr_kind = AddrKind::V6;
             break;
         default:
-            throw Exception("smolsocket::Sock::Sock(): Unknown address family");
+            throw Exception("smolsocket::Sock::Sock(): Unknown address family", {}, {});
             break;
     }
     freeaddrinfo(res);
@@ -67,14 +76,14 @@ Sock::Sock(const std::string_view& addr, const Proto proto) {
     // Actually open the socket
     int sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sock == -1) {
-        throw Exception("smolsocket::Sock::Sock(): Failed to create socket");
+        throw Exception("smolsocket::Sock::Sock(): Failed to create socket: ", {errno}, {});
     }
 
     // And connect
     // TODO: Also support bind()-ing
     err = connect(sock, res->ai_addr, res->ai_addrlen);
     if (err == -1) {
-        throw Exception("smolsocket::Sock::Sock(): Failed to connect() socket");
+        throw Exception("smolsocket::Sock::Sock(): Failed to connect() socket: ", {errno}, {});
     }
 }
 
@@ -83,7 +92,7 @@ void Sock::send(const std::vector<uint8_t>& data) {
     while (sent < data.size()) {
         const int ret = ::send(this->m_sockfd, data.data() + sent, data.size() - sent, 0);
         if (ret == -1) {
-            throw Exception("smolsocket::Sock::send(): Failed to send()");
+            throw Exception("smolsocket::Sock::send(): Failed to send(): ", {errno}, {});
         }
         sent += (size_t)ret;
     }
