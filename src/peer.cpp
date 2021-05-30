@@ -41,9 +41,9 @@ Peer::Peer(const ID& id, std::string const& ip, const std::uint32_t port) {
 void Peer::connect(const std::string_view& truncated_infohash) {
     // Create connection
     try {
-        const std::string addr = fmt::format("{}:{}", this->m_ip, this->m_port);
-        log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Connecting to peer {}", addr));
-        this->m_conn = {{smolsocket::Sock(addr, smolsocket::Proto::TCP)}};
+        log::log(log::Level::Debug, log::Subsystem::Peer,
+                 fmt::format("Connecting to peer {}:{}", this->m_ip, this->m_port));
+        this->m_conn = {{smolsocket::Sock(this->m_ip, this->m_port, smolsocket::Proto::TCP)}};
     } catch (const smolsocket::Exception& e) {
         log::log(log::Level::Fatal, log::Subsystem::Peer, fmt::format("Failed to connect: {}", e.what()));
         exit(EXIT_FAILURE);

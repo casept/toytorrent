@@ -43,12 +43,12 @@ class Sock {
     Proto m_proto;
 
     /*
-     * Takes an ip:port or domain:port string and a protocol,
+     * Takes an IP or domain name string and a protocol,
      * resolves the address and opens a socket.
      *
      * For now, only connect()-ing to socket is supported.
      */
-    Sock(const std::string_view& addr, const Proto proto);
+    Sock(const std::string_view& addr, const uint32_t port, const Proto proto);
     /*
      * Send the given data, retrying until it gets through.
      * TODO: Timeout

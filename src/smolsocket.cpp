@@ -28,7 +28,7 @@ Exception::Exception(const std::string_view& msg, const std::optional<int> errno
 
 const char* Exception::what() const throw() { return this->m_msg.c_str(); }
 
-Sock::Sock(const std::string_view& addr, const Proto proto) {
+Sock::Sock(const std::string_view& addr, const uint32_t port, const Proto proto) {
     this->m_proto = proto;
 
     // Give hints
@@ -51,7 +51,7 @@ Sock::Sock(const std::string_view& addr, const Proto proto) {
     // Lookup
     int err;
     struct addrinfo* res;
-    err = getaddrinfo(addr.data(), NULL, &hints, &res);
+    err = getaddrinfo(addr.data(), std::to_string(port).c_str(), &hints, &res);
     if (err != 0) {
         throw Exception("smolsocket::Sock::Sock(): getaddrinfo() failed: ", {}, {err});
     }
@@ -69,23 +69,27 @@ Sock::Sock(const std::string_view& addr, const Proto proto) {
             this->m_addr_kind = AddrKind::V6;
             break;
         default:
+            freeaddrinfo(res);
             throw Exception("smolsocket::Sock::Sock(): Unknown address family", {}, {});
             break;
     }
-    freeaddrinfo(res);
 
     // Actually open the socket
     int sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sock == -1) {
+        freeaddrinfo(res);
         throw Exception("smolsocket::Sock::Sock(): Failed to create socket: ", {errno}, {});
     }
+    this->m_sockfd = sock;
 
     // And connect
     // TODO: Also support bind()-ing
     err = connect(sock, res->ai_addr, res->ai_addrlen);
     if (err == -1) {
+        freeaddrinfo(res);
         throw Exception("smolsocket::Sock::Sock(): Failed to connect() socket: ", {errno}, {});
     }
+    freeaddrinfo(res);
 }
 
 void Sock::send(const std::vector<uint8_t>& data) {
