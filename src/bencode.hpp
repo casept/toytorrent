@@ -1,14 +1,24 @@
 #pragma once
 
 #include <deque>
+#include <exception>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace tt::bencode {
+// Thrown on (de)serialization failure.
+class Exception : public std::exception {
+   public:
+    std::string m_msg{};
+    Exception(const std::string_view&);
+    const char* what() const throw();
+};
+
 // The various kinds of BEncode-representable objects
 enum class ObjectType { String, Integer, Dict, List };
 

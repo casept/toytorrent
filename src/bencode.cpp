@@ -1,6 +1,7 @@
 #include "bencode.hpp"
 
 #include <ctype.h>
+#include <fmt/core.h>
 
 #include <algorithm>
 #include <deque>
@@ -10,11 +11,16 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
 
 namespace tt::bencode {
+Exception::Exception(const std::string_view &msg) : m_msg(msg) {}
+
+const char *Exception::what() const throw() { return this->m_msg.c_str(); }
+
 // Takes a bencoded string out of the stream.
 std::string take_string(std::deque<char> &in) {
     std::string len_as_str{""};
@@ -28,7 +34,7 @@ std::string take_string(std::deque<char> &in) {
             break;
         } else {
             // Before the ':', no other chars are allowed
-            throw std::runtime_error{"Non-numeric characters not allowed in length specifier of BEncode string"};
+            throw Exception{"Non-numeric characters not allowed in length specifier of BEncode string"};
         }
     }
     const std::int64_t len{std::stoll(len_as_str)};
@@ -64,7 +70,7 @@ std::int64_t take_integer(std::deque<char> &in) {
         } else if (isdigit(next_char)) {
             str_num.push_back(next_char);
         } else {
-            throw std::runtime_error("Encountered unexpected character while trying to parse BEncoded integer");
+            throw Exception{"Encountered unexpected character while trying to parse BEncoded integer"};
         }
     }
     return std::stoll(str_num);
@@ -84,7 +90,7 @@ std::map<std::string, Object> take_dict(std::deque<char> &in) {
             // The dict key (must be a string)
             auto key = Object(in);
             if (key.type != ObjectType::String) {
-                throw std::runtime_error{"BEncode dictionary keys must be strings"};
+                throw Exception{"BEncode dictionary keys must be strings"};
             }
             // The key's value
             auto value = Object(in);
@@ -170,9 +176,12 @@ Object::Object(std::deque<char> &in) {
             break;
         }
         default: {
-            auto err = std::string("Unexpected BEncoded object type starting with character ");
-            err.push_back(first_char);
-            throw std::runtime_error(err);
+            auto char_str = std::string("");
+            char_str.push_back(first_char);
+            auto raw_str = std::string(m_raw_bytes.begin(), m_raw_bytes.end());
+            const auto err = fmt::format("Unexpected BEncoded object type starting with character {} (raw data: {})",
+                                         char_str, raw_str);
+            throw Exception{err};
         }
     }
 }
