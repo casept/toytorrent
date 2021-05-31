@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <exception>
 #include <optional>
 #include <string>
 #include <vector>
@@ -9,6 +10,14 @@
 #include "bencode.hpp"
 #include "peer.hpp"
 namespace tt::tracker {
+// Thrown on tracker-related failures.
+class Exception : public std::exception {
+   public:
+    std::string m_msg{};
+    Exception(const std::string_view&);
+    const char* what() const throw();
+};
+
 // This class abstracts away communication with a particular tracker.
 class TrackerCommunicator {
    private:

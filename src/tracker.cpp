@@ -6,12 +6,18 @@
 #include <cstdint>
 #include <deque>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "bencode.hpp"
+#include "log.hpp"
 #include "peer.hpp"
 
 namespace tt::tracker {
+Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
+
+const char* Exception::what() const throw() { return this->m_msg.c_str(); }
+
 TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const peer::ID& our_peer_id,
                                          std::string trunc_infohash) {
     m_data_downloaded = {0};
@@ -28,7 +34,7 @@ bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::str
     auto dict_entry = dict.find(key);
     if (dict_entry == dict.end()) {
         // Key doesn't exist
-        throw std::runtime_error(throw_msg);
+        throw Exception(throw_msg);
     }
     auto obj = dict_entry->second;
     return obj;
@@ -38,8 +44,7 @@ std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::Object> 
     std::vector<peer::Peer> peers{};
     for (bencode::Object const& peer_entry : list) {
         if (!peer_entry.dict.has_value()) {
-            auto err = "Tracker violated protocol: peer entry is not a bencoded dictionary";
-            throw std::runtime_error(err);
+            throw Exception("Tracker violated protocol: peer entry is not a bencoded dictionary");
         }
         auto peer_dict = peer_entry.dict.value();
         auto peer_id_obj = get_object_from_dict_or_throw("peer id", peer_dict,
@@ -56,7 +61,35 @@ std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::Object> 
     return peers;
 }
 
-// TODO: Quite a bit of error handling is missing
+std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& str) {
+    std::vector<peer::Peer> peers{};
+    size_t i = 0;
+    // v4 addresses are coded as 4 bytes for address, 2 bytes for port
+    if (str.size() % 6 != 0) {
+        throw Exception("Tracker violated protocol: Compact peer representation must be multiple of 6 bytes long");
+    }
+    while (i < str.size()) {
+        // Extract from string
+        std::array<uint8_t, smolsocket::util::V6_Len_Bytes> ip{};
+        std::transform(str.substr(i, i + 4).begin(), str.substr(i, i + 4).end(), ip.begin(),
+                       [](char x) { return static_cast<uint8_t>(x); });
+        std::array<char, 2> port;
+        std::copy_n(str.substr(i + 4, i + 6).begin(), 2, port.begin());
+        // Convert to usable repr
+        std::string ip_str = smolsocket::util::ip_to_str(ip, smolsocket::AddrKind::V4);
+        uint16_t port_native_endian = smolsocket::util::ntoh(port);
+        // Compact format has no ID, generate at random
+        peers.push_back(peer::Peer(peer::ID(), ip_str, port_native_endian));
+        i += 6;
+    }
+    return peers;
+}
+
+/*
+ * Send a peer request to the tracker.
+ * Returns peer list and interval in seconds until next checkin.
+ * TODO: Support BEP7
+ */
 std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_tracker(const std::string& event) {
     // Perform the request
     // TODO: Implement support for compact representation, because many trackers mandate it
@@ -67,21 +100,24 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_t
                                         {"downloaded", std::to_string(m_data_downloaded)},
                                         {"left", std::to_string(m_data_left)},
                                         {"event", event},
-                                        {"compact", "0"}};
+                                        // Some trackers (like opentracker) hate when this is set to 0
+                                        {"compact", "1"}};
     cpr::Response r = cpr::Get(cpr::Url{m_announce_url}, p);
+    tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
+                 fmt::format("Tracker request URL: {}", r.url.str()));
+    tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker, fmt::format("Raw tracker response: {}", r.text));
+
     auto queue = std::deque<char>(r.text.begin(), r.text.end());
     auto parser = bencode::Parser(queue);
     auto resp_object_maybe_none = parser.next();
 
     // Sanity check
     if (!resp_object_maybe_none.has_value()) {
-        auto err = std::string("Tracker response must be a bencoded dictionary");
-        throw std::runtime_error(err);
+        throw Exception("Tracker violated protocol: response must be a bencoded dictionary");
     }
     auto resp_object = resp_object_maybe_none.value();
     if (resp_object.type != bencode::ObjectType::Dict) {
-        auto err = std::string("Tracker response must be a bencoded dictionary");
-        throw std::runtime_error(err);
+        throw Exception("Tracker violated protcol: response must be a bencoded dictionary");
     }
 
     // Check whether the tracker returned a failure
@@ -89,43 +125,67 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_t
     auto failure_reason = resp_dict.find("failure reason");
     if (failure_reason != resp_dict.end()) {
         // The key exists, meaning we have a reason
-        auto err = fmt::format("Tracker indicated failure: {}", failure_reason->second.str.value());
-        throw std::runtime_error(err);
+        throw Exception(fmt::format("Tracker indicated failure with reason: {}", failure_reason->second.str.value()));
     }
 
     // Check when we're supposed to contact the tracker next
     auto interval_mapret = resp_dict.find("interval");
     if (interval_mapret == resp_dict.end()) {
         // The key doesn't exist, meaning the tracker violated the protocol
-        auto err = std::string("Tracker violated protocol: expected a key 'interval' in response, but it was absent");
-        throw std::runtime_error(err);
+        throw Exception("Tracker violated protocol: expected a key 'interval' in response, but it was absent");
     }
     auto interval = interval_mapret->second.integer.value();
+    tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
+                 fmt::format("Tracker told us to check in again in {} seconds\n", interval));
 
     // Finally, parse out the peers
-    auto peers_mapret = resp_dict.find("peers");
-    if (peers_mapret == resp_dict.end()) {
+    auto peers = resp_dict.find("peers");
+    if (peers == resp_dict.end()) {
         // The key doesn't exist, meaning the tracker violated the protocol
-        auto err = std::string("Tracker violated protocol: expected a key 'peers' in response, but it was absent");
-        throw std::runtime_error(err);
+        throw Exception("Tracker violated protocol: expected a key 'peers' in response, but it was absent");
     }
-    auto peers_list = peers_mapret->second.list.value();
-    auto peers = bencode_peer_list_to_peers(peers_list);
-
-    return std::tuple<std::vector<peer::Peer>, std::int64_t>(peers, interval);
+    // Trackers may return BEP52-style compact peer lists unprompted, so we have to always be ready to parse both
+    std::vector<peer::Peer> peers_vec{};
+    if (peers->second.list.has_value()) {
+        // Classic peer list
+        auto peers_bencoded = peers->second.list.value();
+        peers_vec = bencode_peer_list_to_peers(peers_bencoded);
+    } else if (peers->second.str.has_value()) {
+        // Compact peer list
+        auto peers_bencoded = peers->second.str.value();
+        peers_vec = bep52_peer_str_to_peers(peers_bencoded);
+    } else {
+        // Garbage
+        throw Exception("Tracker violated protocol: peers weren't list or string");
+    }
+    for (const auto& peer : peers_vec) {
+        tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
+                     fmt::format("Got peer from tracker: {}\n", peer));
+    }
+    return std::tuple<std::vector<peer::Peer>, std::int64_t>(peers_vec, interval);
 }
 
 std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_completed() {
+    log::log(log::Level::Debug, log::Subsystem::Tracker,
+             fmt::format("Sending completion notice to tracker {}", this->m_announce_url));
     return send_to_tracker("completed");
 }
 
 std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_started() {
+    log::log(log::Level::Debug, log::Subsystem::Tracker,
+             fmt::format("Sending start notice to tracker {}", this->m_announce_url));
     return send_to_tracker("started");
 }
 
 std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_stopped() {
+    log::log(log::Level::Debug, log::Subsystem::Tracker,
+             fmt::format("Sending stop notice to tracker {}", this->m_announce_url));
     return send_to_tracker("stopped");
 }
 
-std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_update() { return send_to_tracker(""); }
+std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_update() {
+    log::log(log::Level::Debug, log::Subsystem::Tracker,
+             fmt::format("Sending update request to tracker {}", this->m_announce_url));
+    return send_to_tracker("");
+}
 }  // namespace tt::tracker

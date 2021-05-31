@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fmt/format.h>
+
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -10,6 +12,14 @@
 #include "smolsocket.hpp"
 
 namespace tt::peer {
+// Thrown on peer-related failures.
+class Exception : public std::exception {
+   public:
+    std::string m_msg{};
+    Exception(const std::string_view&);
+    const char* what() const throw();
+};
+
 constexpr std::size_t ID_Length{21};
 
 // A per-torrent peer identifier
@@ -44,11 +54,24 @@ class Peer {
 
    public:
     std::string m_ip;
-    std::uint32_t m_port;
+    std::uint16_t m_port;
     ID m_id;
 
-    Peer(const ID& id, std::string const& ip, const std::uint32_t port);
+    Peer(const ID& id, std::string const& ip, const std::uint16_t port);
     // Establish a connection to this peer.
     void connect(const std::string_view& truncated_infohash);
+    // Check whether a connection is established.
+    bool is_connected() const;
 };
 }  // namespace tt::peer
+
+template <>
+struct fmt::formatter<tt::peer::Peer> : fmt::formatter<string_view> {
+    // parse is inherited from formatter<string_view>.
+    template <typename FormatContext>
+    auto format(tt::peer::Peer p, FormatContext& ctx) {
+        std::string formatted =
+            fmt::format("{{ID: \"{}\", IP: \"{}\", Port: \"{}\"}}", p.m_id.as_string(), p.m_ip, p.m_port);
+        return fmt::formatter<string_view>::format(formatted, ctx);
+    }
+};

@@ -4,14 +4,17 @@ extern "C" {
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 }
 
+#include <array>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <string>
 #include <string_view>
 
 namespace smolsocket {
@@ -28,7 +31,7 @@ Exception::Exception(const std::string_view& msg, const std::optional<int> errno
 
 const char* Exception::what() const throw() { return this->m_msg.c_str(); }
 
-Sock::Sock(const std::string_view& addr, const uint32_t port, const Proto proto) {
+Sock::Sock(const std::string_view& addr, const uint16_t port, const Proto proto) {
     this->m_proto = proto;
 
     // Give hints
@@ -104,5 +107,39 @@ void Sock::send(const std::vector<uint8_t>& data) {
 }
 
 Sock::~Sock() { close(this->m_sockfd); }
+
+namespace util {
+std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const AddrKind kind) {
+    std::array<char, std::max(V4_Len_Bytes, V6_Len_Bytes) + 1> buf;
+    std::fill(buf.begin(), buf.end(), '\0');
+    const char* res;
+    switch (kind) {
+        case AddrKind::V4:
+            res = inet_ntop(AF_INET, bytes.data(), buf.data(), buf.size());
+            break;
+        case AddrKind::V6:
+            res = inet_ntop(AF_INET6, bytes.data(), buf.data(), buf.size());
+            break;
+        default:
+            std::cerr << "smolsocket::util::ip_to_str(): Unknown address kind. This is a bug." << std::endl;
+            std::exit(EXIT_FAILURE);
+            break;
+    }
+    if (res == NULL) {
+        throw Exception(
+            "smolsocket::util::ip_to_str(): Failed to convert numeric IP to string representation: inet_ntop failed: ",
+            {errno}, {});
+    }
+    return std::string(buf.begin(), buf.end());
+}
+
+uint16_t ntoh(uint16_t x) { return ::ntohs(x); }
+uint16_t ntoh(std::array<char, 2> arr) {
+    uint16_t x = static_cast<uint16_t>(arr[1]);
+    x = x | (static_cast<uint16_t>(arr[0]) << 8);
+    return ::ntohs(x);
+}
+uint16_t hton(uint16_t x) { return ::htons(x); }
+}  // namespace util
 
 }  // namespace smolsocket

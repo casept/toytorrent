@@ -3,6 +3,7 @@
 #include <fmt/color.h>
 #include <fmt/core.h>
 
+#include <iostream>
 #include <string_view>
 
 namespace tt::log {
@@ -21,7 +22,8 @@ void log(const Level level, const Subsystem subsystem, const std::string_view& m
         default:
             color = fmt::color::white;
     }
-    fmt::print(fg(color), "[{}], [{}] {}\n", level, subsystem, msg);
+    fmt::print(fg(color), "[{}] [{}] {}\n", level, subsystem, msg);
+    std::cout.flush();
 }
 
 }  // namespace tt::log

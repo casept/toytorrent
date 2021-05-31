@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <exception>
 #include <optional>
@@ -48,7 +49,7 @@ class Sock {
      *
      * For now, only connect()-ing to socket is supported.
      */
-    Sock(const std::string_view& addr, const uint32_t port, const Proto proto);
+    Sock(const std::string_view& addr, const uint16_t port, const Proto proto);
     /*
      * Send the given data, retrying until it gets through.
      * TODO: Timeout
@@ -57,5 +58,24 @@ class Sock {
 
     ~Sock();
 };
+
+// --- Wrappers for utility funcs
+namespace util {
+const size_t V4_Len_Bytes = 4;
+const size_t V6_Len_Bytes = 16;
+
+/*
+ * Converts numeric repr (in network byte order) of an IP address to a string.
+ * For IPv4, everything after first 4 bytes is ignored.
+ */
+std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const AddrKind kind);
+
+// Convert from network to host endianness
+uint16_t ntoh(uint16_t x);
+uint16_t ntoh(std::array<char, 2> arr);
+// Convert from host to network endianness
+uint16_t hton(uint16_t x);
+
+}  // namespace util
 
 }  // namespace smolsocket

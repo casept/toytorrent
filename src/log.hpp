@@ -12,7 +12,7 @@ const fmt::color Fatal_Color = fmt::color::red;
 
 enum class Level { Debug, Warning, Fatal };
 
-enum class Subsystem { Peer };
+enum class Subsystem { Peer, Tracker, Torrent };
 
 void log(const Level level, const Subsystem subsystem, const std::string_view& msg);
 
@@ -54,6 +54,12 @@ struct fmt::formatter<tt::log::Subsystem> : fmt::formatter<string_view> {
         switch (s) {
             case tt::log::Subsystem::Peer:
                 name = "PEER";
+                break;
+            case tt::log::Subsystem::Tracker:
+                name = "TRACKER";
+                break;
+            case tt::log::Subsystem::Torrent:
+                name = "TORRENT";
                 break;
             default:
                 name = "UNKNOWN";

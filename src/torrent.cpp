@@ -3,9 +3,12 @@
 #include <fmt/core.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <string>
+#include <thread>
 
+#include "log.hpp"
 #include "metainfo.hpp"
 #include "tracker.hpp"
 
@@ -18,7 +21,7 @@ Piece::Piece(size_t size, std::array<char, Piece_SHA1_Len> expected_hash) {
 }
 
 Torrent::Torrent(const MetaInfo &parsed_file)
-    : m_metainfo(parsed_file), m_us_peer(peer::Peer(peer::ID(), "178.175.131.100", 1337)) {
+    : m_metainfo(parsed_file), m_us_peer(peer::Peer(peer::ID(), "127.0.0.1", 1337)) {
     // Our peer ID is already initialized above
     // TODO: Get IP and port (can we ask the tracker for IP?)
 
@@ -26,6 +29,7 @@ Torrent::Torrent(const MetaInfo &parsed_file)
     this->m_trackers = {};
     auto tracker = tracker::TrackerCommunicator(parsed_file.m_primary_tracker_url, this->m_us_peer.m_port,
                                                 this->m_us_peer.m_id, parsed_file.truncated_infohash());
+
     this->m_trackers.push_back(tracker);
 
     // Initialize pieces
@@ -41,23 +45,25 @@ void Torrent::download() {
     // Initial tracker checkin
     auto tracker = this->m_trackers.at(0);
     const auto [initial_peers, initial_next_checkin] = tracker.send_started();
-    fmt::print("Tracker told us to check in again in {} seconds\n", initial_next_checkin);
-    for (const auto &peer : initial_peers) {
-        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
-    }
 
     // Periodic tracker checkin
     auto [peers, next_checkin] = tracker.send_update();
-    for (const auto &peer : peers) {
-        fmt::print("Got peer from tracker: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
-    }
-
     // Handshake with all peers that aren't we ourselves
     // TODO: Send keepalives to all peers periodically
     for (peer::Peer &peer : peers) {
-        if (peer.m_id != this->m_us_peer.m_id) {
-            fmt::print("Connecting to peer: ID: {}, IP: {}, Port: {}\n", peer.m_id.as_string(), peer.m_ip, peer.m_port);
-            peer.connect(this->m_metainfo.truncated_infohash());
+        if ((peer.m_id != this->m_us_peer.m_id) && (peer.m_ip != this->m_us_peer.m_ip) &&
+            (peer.m_port != this->m_us_peer.m_port)) {
+            while (!peer.is_connected()) {
+                try {
+                    peer.connect(this->m_metainfo.truncated_infohash());
+                } catch (const peer::Exception &e) {
+                    // TODO: Send into a retry queue and do exponential backoff or something
+                    log::log(log::Level::Warning, log::Subsystem::Torrent,
+                             fmt::format("Torrent::download(): Peer failed: {}; retrying in 5s", e.what()));
+                    using namespace std::chrono_literals;
+                    std::this_thread::sleep_for(5s);
+                }
+            }
         }
     }
 
