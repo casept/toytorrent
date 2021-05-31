@@ -17,7 +17,11 @@ in pkgs.mkShell {
     pkgs.pkgconfig
     pkgs.ninja
     pkgs.cppcheck
+    pkgs.include-what-you-use
+    pkgs.python3
     pkgs.gtest
+    pkgs.valgrind
+    pkgs.gdb
 
     # Libraries we depend on
     pkgs.botan2

@@ -35,7 +35,7 @@ add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -O0 -g)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 # 3rd-party deps
