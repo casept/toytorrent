@@ -21,17 +21,15 @@ Piece::Piece(size_t size, std::array<char, Piece_SHA1_Len> expected_hash) {
 }
 
 Torrent::Torrent(const MetaInfo &parsed_file)
-    : m_metainfo(parsed_file), m_us_peer(peer::Peer(peer::ID(), "127.0.0.1", 1337)) {
+    : m_metainfo(parsed_file),
+      m_us_peer(peer::Peer(peer::ID(), "127.0.0.1", 1337)),
+      m_tracker_req({
+          tracker::RequestKind::STARTED,
+          parsed_file.truncated_infohash_binary(),
+          tracker::Stats{0, 0, 0},
+          this->m_us_peer,
+      }) {
     // Our peer ID is already initialized above
-    // TODO: Get IP and port (can we ask the tracker for IP?)
-
-    // Initialize trackers (for now, just one)
-    this->m_trackers = {};
-    auto tracker =
-        tracker::TrackerCommunicator(parsed_file.m_primary_tracker_url, this->m_us_peer.m_port, this->m_us_peer.m_id,
-                                     parsed_file.truncated_infohash_binary(), parsed_file.total_size());
-
-    this->m_trackers.push_back(tracker);
 
     // Initialize pieces
     this->m_pieces = {};
@@ -40,12 +38,20 @@ Torrent::Torrent(const MetaInfo &parsed_file)
         const Piece piece = Piece(parsed_file.m_piece_length, expected_hash);
         this->m_pieces.push_back(piece);
     }
+
+    // Initialize tracker params
+    this->m_tracker_req = {
+        tracker::RequestKind::STARTED,
+        parsed_file.truncated_infohash_binary(),
+        tracker::Stats{0, 0, 0},
+        this->m_us_peer,
+    };
 }
 
 void Torrent::download() {
     // Initial tracker checkin
-    auto tracker = this->m_trackers.at(0);
-    auto [initial_peers, initial_next_checkin] = tracker.send_started();
+    auto [initial_peers, initial_next_checkin] =
+        tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
     // Handshake with all peers that aren't we ourselves
     // TODO: Send keepalives to all peers periodically
     for (peer::Peer &peer : initial_peers) {
@@ -63,6 +69,7 @@ void Torrent::download() {
     }
 
     // Tracker checkout
-    tracker.send_stopped();
+    this->m_tracker_req.kind = tracker::RequestKind::STOPPED;
+    tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
 }
 }  // namespace tt

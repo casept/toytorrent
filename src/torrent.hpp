@@ -40,10 +40,10 @@ class Torrent {
     MetaInfo m_metainfo;
     // All pieces of the torrent.
     std::vector<Piece> m_pieces;
-    // All trackers tracking this torrent.
-    std::vector<tracker::TrackerCommunicator> m_trackers;
     // Our peer identity.
     peer::Peer m_us_peer;
+    // Our tracker request params.
+    tracker::Request m_tracker_req;
 
    public:
     // Create a torrent from the given parsed torrent file.

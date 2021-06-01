@@ -2,7 +2,6 @@
 
 #include <fmt/format.h>
 
-#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -20,7 +19,7 @@ class Exception : public std::exception {
     const char* what() const throw();
 };
 
-constexpr std::size_t ID_Length{21};
+const std::size_t ID_Length = 20;
 
 // A per-torrent peer identifier
 class ID {
@@ -36,7 +35,7 @@ class ID {
     std::string as_string() const;
 
    private:
-    std::array<char, ID_Length> m_id;
+    std::string m_id;
 };
 
 // An active connection to a peer.
@@ -70,8 +69,8 @@ struct fmt::formatter<tt::peer::Peer> : fmt::formatter<string_view> {
     // parse is inherited from formatter<string_view>.
     template <typename FormatContext>
     auto format(tt::peer::Peer p, FormatContext& ctx) {
-        std::string formatted =
-            fmt::format("{{ID: \"{}\", IP: \"{}\", Port: \"{}\"}}", p.m_id.as_string(), p.m_ip, p.m_port);
-        return fmt::formatter<string_view>::format(formatted, ctx);
+        fmt::memory_buffer out;
+        fmt::format_to(out, "{{ID: \"{}\", IP: \"{}\", Port: \"{}\"}}", p.m_id.as_string(), p.m_ip, p.m_port);
+        return fmt::formatter<string_view>::format(out.data(), ctx);
     }
 };

@@ -1,11 +1,9 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <exception>
-#include <optional>
-#include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 #include "bencode.hpp"
@@ -19,62 +17,42 @@ class Exception : public std::exception {
     const char* what() const throw();
 };
 
-// This class abstracts away communication with a particular tracker.
-class TrackerCommunicator {
-   private:
-    std::string m_announce_url;
-    std::vector<std::uint8_t> m_info_hash;
-    std::string m_peer_id;
-    std::uint64_t m_data_downloaded;
-    std::uint64_t m_data_uploaded;
-    std::uint64_t m_data_left;
-    std::uint32_t m_port;
-    // Send the given event to the tracker with the data in this class
-    // Returns a vector of peers the tracker gave us if successful.
-    // Causes an exception if not.
-    std::tuple<std::vector<peer::Peer>, std::int64_t> send_to_tracker(const std::string& event);
-
+// Statistics the tracker collects from us
+struct Stats {
    public:
-    // Create a TrackerCommunicator to talk with the given tracker.
-    TrackerCommunicator(const std::string_view& announce_url, const std::uint16_t our_port, const peer::ID& our_peer_id,
-                        const std::vector<std::uint8_t>& trunc_infohash_binary, const std::size_t data_left);
-    // Update our statistics about uploaded and downloaded data
-    // which are sent to the tracker.
-    void set_data_downloaded(std::uint64_t num_bytes);
-    void set_data_uploaded(std::uint64_t num_bytes);
-    void set_data_left(std::uint64_t num_bytes);
-
-    // Tell the tracker that our download is finished.
-    // Returns a vector of peers the tracker gave us if successful.
-    // Causes an exception if not.
-    std::tuple<std::vector<peer::Peer>, std::int64_t> send_completed();
-
-    // Tell the tracker that we've just started our download.
-    // Returns a vector of peers the tracker gave us if successful.
-    // Causes an exception if not.
-    std::tuple<std::vector<peer::Peer>, std::int64_t> send_started();
-
-    // Tell the tracker that we've stopped downloading.
-    // Returns a vector of peers the tracker gave us if successful.
-    // Causes an exception if not.
-    std::tuple<std::vector<peer::Peer>, std::int64_t> send_stopped();
-
-    // Tell the tracker that we just want more peers.
-    // Returns a vector of peers the tracker gave us if successful.
-    // Causes an exception if not.
-    std::tuple<std::vector<peer::Peer>, std::int64_t> send_update();
+    std::uint64_t bytes_downloaded;
+    std::uint64_t bytes_uploaded;
+    std::uint64_t bytes_left;
 };
 
-struct TrackerResponse {
-    std::int64_t num_peers_complete;
-    // TODO: Figure out what this field is (undocumented?)
-    std::int64_t downloaded;
-    std::int64_t num_peers_incomplete;
-    // How often we should check in
-    std::int64_t tracker_request_wait;
-    // How often we're allowed to contact the tracker
-    std::int64_t minimum_tracker_request_wait;
-    // TODO: Represent better
-    bencode::Object peers;
+// The types of requests we can send to the tracker.
+enum class RequestKind {
+    // Tell tracker that we just joined the swarm
+    STARTED,
+    // Tell tracker we have finished leeching
+    COMPLETED,
+    // Tell tracker that we've stopped
+    STOPPED,
+    // Routine update sent on tracker-requested schedule or to replenish peers
+    UPDATE
 };
+
+// What the tracker needs to know to service a request.
+struct Request {
+   public:
+    // What we want from the tracker
+    RequestKind kind;
+    // The torrent's 20-byte truncated binary infohash
+    std::vector<std::uint8_t> trunc_infohash_binary;
+    // Statistics the tracker would like to know from us
+    Stats stats;
+    // The peer object we use to represent ourselves
+    peer::Peer us;
+};
+
+// Sends a request to the tracker.
+// See `RequestKind` for semantics of each message type.
+// Returns a vector of peers the tracker gave us if successful.
+// Causes an exception if not.
+std::tuple<std::vector<peer::Peer>, std::int64_t> send_request(const std::string_view& announce_url, const Request& r);
 }  // namespace tt::tracker

@@ -17,17 +17,15 @@ const char* Exception::what() const throw() { return this->m_msg.c_str(); }
 
 ID::ID() {
     // Generate 20 random printable ASCII chars
-    this->m_id = {'\0'};
+    this->m_id = std::string("");
+    this->m_id.reserve(ID_Length);
     auto rng = Botan::AutoSeeded_RNG();
-    size_t i = 0;
-    while (i < this->m_id.size() - 1) {
+    while (this->m_id.size() < ID_Length) {
         const uint8_t byte = rng.next_nonzero_byte();
         if (byte >= 33 && byte <= 126) {
-            this->m_id[i] = (char)byte;
-            i++;
+            this->m_id.push_back((char)byte);
         }
     }
-    this->m_id[20] = '\0';
 }
 
 ID::ID(const std::array<char, ID_Length>& str) { std::copy(str.begin(), str.end(), this->m_id.begin()); }
@@ -41,7 +39,7 @@ Peer::Peer(const ID& id, std::string const& ip, const std::uint16_t port) : m_ip
 void Peer::connect(const std::string_view& truncated_infohash) {
     // Create connection
     try {
-        log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Connecting to peer {}", *this));
+        log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Peer::connect(): {}", *this));
         this->m_conn = {{smolsocket::Sock(this->m_ip, this->m_port, smolsocket::Proto::TCP)}};
     } catch (const smolsocket::Exception& e) {
         auto msg = fmt::format("Peer::connect(): Failed to connect: {}", e.what());
@@ -67,6 +65,8 @@ void Peer::connect(const std::string_view& truncated_infohash) {
         log::log(log::Level::Warning, log::Subsystem::Peer, msg);
         throw Exception(msg);
     }
+    log::log(log::Level::Debug, log::Subsystem::Peer,
+             fmt::format("Peer::connect(): connection established to peer {}", *this));
 }
 
 bool Peer::is_connected() const { return this->m_conn.has_value(); }
