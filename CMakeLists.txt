@@ -38,11 +38,24 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -O0 -g)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
+# Hack to force cmake to add system (libstdc++) header path to
+# compile_commands.json. This also adds a lot of junk, but as long as it doesn't
+# slow clangd too much I'll deal.
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
+
 # 3rd-party deps
 find_package(Botan2 2.0 REQUIRED)
 find_package(CPR REQUIRED)
 find_package(fmt REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2 fmt::fmt)
+# Not needed for the build, but to generate correct compile_commands.json
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  target_include_directories(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2
+                                                     fmt::fmt)
+endif()
 
 install(
   TARGETS ${PROJECT_NAME}
@@ -67,6 +80,12 @@ if(BUILD_TESTING)
   target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
   target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest test_resources cpr
                                                      Botan2::Botan2 fmt::fmt)
+  # Not needed for the build, but to generate correct compile_commands.json
+  if(CMAKE_EXPORT_COMPILE_COMMANDS)
+    target_include_directories(
+      ${PROJECT_NAME}_test PRIVATE gtest test_resources cpr Botan2::Botan2
+                                   fmt::fmt)
+  endif()
 
   # Useful to run tests in a different environment than the build (for example,
   # outside the Nix build sandbox so we can talk to a real tracker)
