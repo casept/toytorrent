@@ -3,6 +3,7 @@
 #include <cpr/cpr.h>
 #include <fmt/core.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <string>
@@ -18,15 +19,19 @@ Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
 
 const char* Exception::what() const throw() { return this->m_msg.c_str(); }
 
-TrackerCommunicator::TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const peer::ID& our_peer_id,
-                                         std::string trunc_infohash) {
-    m_data_downloaded = {0};
-    m_data_uploaded = {0};
-    m_data_left = {0};
-    m_announce_url = {announce_url};
-    m_peer_id = our_peer_id.as_string();
-    m_port = {our_port};
-    m_info_hash = {trunc_infohash};
+TrackerCommunicator::TrackerCommunicator(const std::string_view& announce_url, const std::uint16_t our_port,
+                                         const peer::ID& our_peer_id,
+                                         const std::vector<std::uint8_t>& trunc_infohash_binary,
+                                         const std::size_t data_left)
+    : m_data_downloaded(0),
+      m_data_uploaded(0),
+      m_data_left(data_left),
+      m_announce_url(announce_url),
+      m_peer_id(our_peer_id.as_string()),
+      m_port(our_port) {
+    m_info_hash = {};
+    m_info_hash.resize(trunc_infohash_binary.size());
+    std::copy(trunc_infohash_binary.begin(), trunc_infohash_binary.end(), m_info_hash.begin());
 }
 
 bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::string, bencode::Object> dict,
@@ -93,7 +98,11 @@ std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& str) {
 std::tuple<std::vector<peer::Peer>, std::int64_t> TrackerCommunicator::send_to_tracker(const std::string& event) {
     // Perform the request
     // TODO: Implement support for compact representation, because many trackers mandate it
-    cpr::Parameters p = cpr::Parameters{{"info_hash", m_info_hash},
+    std::string info_hash_str{};
+    for (const auto b : this->m_info_hash) {
+        info_hash_str.push_back(static_cast<char>(b));
+    }
+    cpr::Parameters p = cpr::Parameters{{"info_hash", info_hash_str},
                                         {"peer_id", std::string(m_peer_id.data())},
                                         {"port", std::to_string(m_port)},
                                         {"uploaded", std::to_string(m_data_uploaded)},

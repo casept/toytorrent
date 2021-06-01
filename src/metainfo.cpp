@@ -1,5 +1,6 @@
 #include "metainfo.hpp"
 
+#include <bits/stdint-uintn.h>
 #include <botan-2/botan/hash.h>
 #include <botan-2/botan/hex.h>
 
@@ -7,7 +8,10 @@
 #include <array>
 #include <cstdint>
 #include <deque>
+#include <iterator>
 #include <map>
+#include <stdexcept>
+#include <vector>
 
 #include "bencode.hpp"
 namespace tt {
@@ -65,14 +69,33 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     }
 }
 
-std::string MetaInfo::infohash() const {
+std::vector<uint8_t> MetaInfo::infohash_binary() const {
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
-    // const_cast should be fine here because the buffer isn't touched
+    // const_cast should be fine here because the buffer isn't written to
     auto data = const_cast<char*>(this->m_bencoded_info.data());
-    const auto hash_vec = hasher.get()->process(reinterpret_cast<uint8_t*>(data), this->m_bencoded_info.size());
-    const auto hash = Botan::hex_encode(hash_vec, true);
+    auto sec_hash = hasher.get()->process(reinterpret_cast<uint8_t*>(data), this->m_bencoded_info.size());
+    std::vector<std::uint8_t> hash;
+    hash.reserve(sec_hash.size());
+    std::copy(sec_hash.begin(), sec_hash.end(), hash.begin());
     return hash;
 }
 
+std::string MetaInfo::infohash() const { return Botan::hex_encode(this->infohash_binary(), false); }
+
+std::vector<std::uint8_t> MetaInfo::truncated_infohash_binary() const {
+    std::vector<std::uint8_t> trunc{};
+    trunc.reserve(20);
+    trunc.resize(20);
+    std::copy_n(this->infohash_binary().begin(), 20, trunc.begin());
+    return trunc;
+}
+
 std::string MetaInfo::truncated_infohash() const { return this->infohash().substr(0, 20); }
+
+std::size_t MetaInfo::total_size() const {
+    if (!this->m_file_length.has_value()) {
+        throw std::runtime_error{"Failed to get size of torrent file: length key was None"};
+    }
+    return this->m_file_length.value();
+}
 }  // namespace tt

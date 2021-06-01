@@ -5,6 +5,7 @@
 #include <exception>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "bencode.hpp"
@@ -22,7 +23,7 @@ class Exception : public std::exception {
 class TrackerCommunicator {
    private:
     std::string m_announce_url;
-    std::string m_info_hash;
+    std::vector<std::uint8_t> m_info_hash;
     std::string m_peer_id;
     std::uint64_t m_data_downloaded;
     std::uint64_t m_data_uploaded;
@@ -34,10 +35,9 @@ class TrackerCommunicator {
     std::tuple<std::vector<peer::Peer>, std::int64_t> send_to_tracker(const std::string& event);
 
    public:
-    TrackerCommunicator() = delete;
     // Create a TrackerCommunicator to talk with the given tracker.
-    explicit TrackerCommunicator(std::string announce_url, std::uint32_t our_port, const peer::ID& our_peer_id,
-                                 std::string trunc_infohash);
+    TrackerCommunicator(const std::string_view& announce_url, const std::uint16_t our_port, const peer::ID& our_peer_id,
+                        const std::vector<std::uint8_t>& trunc_infohash_binary, const std::size_t data_left);
     // Update our statistics about uploaded and downloaded data
     // which are sent to the tracker.
     void set_data_downloaded(std::uint64_t num_bytes);

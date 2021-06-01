@@ -27,8 +27,9 @@ Torrent::Torrent(const MetaInfo &parsed_file)
 
     // Initialize trackers (for now, just one)
     this->m_trackers = {};
-    auto tracker = tracker::TrackerCommunicator(parsed_file.m_primary_tracker_url, this->m_us_peer.m_port,
-                                                this->m_us_peer.m_id, parsed_file.truncated_infohash());
+    auto tracker =
+        tracker::TrackerCommunicator(parsed_file.m_primary_tracker_url, this->m_us_peer.m_port, this->m_us_peer.m_id,
+                                     parsed_file.truncated_infohash_binary(), parsed_file.total_size());
 
     this->m_trackers.push_back(tracker);
 
@@ -44,27 +45,21 @@ Torrent::Torrent(const MetaInfo &parsed_file)
 void Torrent::download() {
     // Initial tracker checkin
     auto tracker = this->m_trackers.at(0);
-    const auto [initial_peers, initial_next_checkin] = tracker.send_started();
-
-    // Periodic tracker checkin
-    auto [peers, next_checkin] = tracker.send_update();
+    auto [initial_peers, initial_next_checkin] = tracker.send_started();
     // Handshake with all peers that aren't we ourselves
     // TODO: Send keepalives to all peers periodically
-    for (peer::Peer &peer : peers) {
+    for (peer::Peer &peer : initial_peers) {
         if ((peer.m_id != this->m_us_peer.m_id) && (peer.m_ip != this->m_us_peer.m_ip) &&
             (peer.m_port != this->m_us_peer.m_port)) {
-            while (!peer.is_connected()) {
-                try {
-                    peer.connect(this->m_metainfo.truncated_infohash());
-                } catch (const peer::Exception &e) {
-                    // TODO: Send into a retry queue and do exponential backoff or something
-                    log::log(log::Level::Warning, log::Subsystem::Torrent,
-                             fmt::format("Torrent::download(): Peer failed: {}; retrying in 5s", e.what()));
-                    using namespace std::chrono_literals;
-                    std::this_thread::sleep_for(5s);
-                }
+            try {
+                peer.connect(this->m_metainfo.truncated_infohash());
+            } catch (const peer::Exception &e) {
+                // TODO: Send into a retry queue and do exponential backoff or something
+                log::log(log::Level::Warning, log::Subsystem::Torrent,
+                         fmt::format("Torrent::download(): Peer failed: {}", e.what()));
             }
         }
+        log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Tried all peers");
     }
 
     // Tracker checkout

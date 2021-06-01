@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bits/c++config.h>
+
 #include <array>
 #include <cstdint>
 #include <deque>
@@ -38,9 +40,15 @@ class MetaInfo {
 
     // Parses the data in the queue into a MetaInfo instance
     MetaInfo(std::deque<char> in);
-    // Computes the infohash for this MetaInfo.
+    // Computes the string form of the infohash for this MetaInfo.
     std::string infohash() const;
-    // Computes the infohash for this MetaInfo, truncated to 20 bytes.
+    // Computes the binary form of the infohash for this MetaInfo.
+    std::vector<std::uint8_t> infohash_binary() const;
+    // Computes the string form of the infohash for this MetaInfo, truncated to 20 bytes.
     std::string truncated_infohash() const;
+    // Computes the binary form of the infohash for this MetaInfo, truncated to 20 bytes.
+    std::vector<std::uint8_t> truncated_infohash_binary() const;
+    // Returns the total size of this torrent, in bytes.
+    std::size_t total_size() const;
 };
 }  // namespace tt
