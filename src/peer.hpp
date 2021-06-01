@@ -64,13 +64,18 @@ class Peer {
 };
 }  // namespace tt::peer
 
+namespace fmt {
 template <>
-struct fmt::formatter<tt::peer::Peer> : fmt::formatter<string_view> {
-    // parse is inherited from formatter<string_view>.
+struct formatter<tt::peer::Peer> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext& ctx) {
+        return ctx.begin();
+    }
+
     template <typename FormatContext>
-    auto format(tt::peer::Peer p, FormatContext& ctx) {
-        fmt::memory_buffer out;
-        fmt::format_to(out, "{{ID: \"{}\", IP: \"{}\", Port: \"{}\"}}", p.m_id.as_string(), p.m_ip, p.m_port);
-        return fmt::formatter<string_view>::format(out.data(), ctx);
+    auto format(const tt::peer::Peer& p, FormatContext& ctx) {
+        return format_to(ctx.out(), "{{ID: \"{}\", IP: \"{}\", Port: \"{}\"}}", p.m_id.as_string(), p.m_ip.c_str(),
+                         p.m_port);
     }
 };
+}  // namespace fmt
