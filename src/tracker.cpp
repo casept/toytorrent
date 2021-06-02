@@ -97,7 +97,7 @@ static std::string req_kind_to_str(const RequestKind r) {
     return event_str;
 }
 
-std::tuple<std::vector<peer::Peer>, std::int64_t> send_request(const std::string_view& announce_url, const Request& r) {
+static cpr::Response query_tracker(const std::string_view& announce_url, const Request& r) {
     std::string info_hash_str{};
     for (const auto b : r.trunc_infohash_binary) {
         info_hash_str.push_back(static_cast<char>(b));
@@ -118,42 +118,17 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> send_request(const std::string
                  fmt::format("Tracker request URL: {}", resp.url.str()));
     tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
                  fmt::format("Raw tracker response: {}", resp.text));
-
-    auto queue = std::deque<char>(resp.text.begin(), resp.text.end());
-    auto parser = bencode::Parser(queue);
-    auto resp_object_maybe_none = parser.next();
-
-    // Sanity check
-    if (!resp_object_maybe_none.has_value()) {
-        throw Exception("tracker::send_request(): Tracker violated protocol: response must be a bencoded dictionary");
+    if (resp.error.code != cpr::ErrorCode::OK) {
+        if (resp.status_code != cpr::status::HTTP_OK) {
+            throw Exception(fmt::format("tracker::send_request(): Got status code {} from tracker", resp.status_code));
+        } else {
+            throw Exception(fmt::format("tracker::send_request(): Got error \"{}\" from curl", resp.error.message));
+        }
     }
-    auto resp_object = resp_object_maybe_none.value();
-    if (resp_object.type != bencode::ObjectType::Dict) {
-        throw Exception("tracker::send_request(): Tracker violated protcol: response must be a bencoded dictionary");
-    }
+    return resp;
+}
 
-    // Check whether the tracker returned a failure
-    auto resp_dict = resp_object.dict.value();
-    auto failure_reason = resp_dict.find("failure reason");
-    if (failure_reason != resp_dict.end()) {
-        // The key exists, meaning we have a reason
-        throw Exception(fmt::format("tracker::send_request(): Tracker indicated failure with reason: {}",
-                                    failure_reason->second.str.value()));
-    }
-
-    // Check when we're supposed to contact the tracker next
-    auto interval_mapret = resp_dict.find("interval");
-    if (interval_mapret == resp_dict.end()) {
-        // The key doesn't exist, meaning the tracker violated the protocol
-        throw Exception(
-            "tracker::send_request(): Tracker violated protocol: expected a key 'interval' in response, but it was "
-            "absent");
-    }
-    auto interval = interval_mapret->second.integer.value();
-    tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
-                 fmt::format("tracker::send_request(): Tracker told us to check in again in {} seconds\n", interval));
-
-    // Finally, parse out the peers
+static std::vector<peer::Peer> parse_peers_from_tracker_resp(const std::map<std::string, bencode::Object>& resp_dict) {
     auto peers = resp_dict.find("peers");
     if (peers == resp_dict.end()) {
         // The key doesn't exist, meaning the tracker violated the protocol
@@ -181,7 +156,50 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> send_request(const std::string
         tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
                      fmt::format("tracker::send_request(): peer: {}", peer));
     }
+    return peers_vec;
+}
 
+static std::int64_t parse_checkin_interval_from_tracker_resp(const std::map<std::string, bencode::Object>& resp_dict) {
+    // Check when we're supposed to contact the tracker next
+    auto interval_mapret = resp_dict.find("interval");
+    if (interval_mapret == resp_dict.end()) {
+        // The key doesn't exist, meaning the tracker violated the protocol
+        throw Exception(
+            "tracker::send_request(): Tracker violated protocol: expected a key 'interval' in response, but it was "
+            "absent");
+    }
+    std::int64_t interval = interval_mapret->second.integer.value();
+    tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
+                 fmt::format("tracker::send_request(): Tracker told us to check in again in {} seconds\n", interval));
+    return interval;
+}
+
+std::tuple<std::vector<peer::Peer>, std::int64_t> send_request(const std::string_view& announce_url, const Request& r) {
+    const auto resp = query_tracker(announce_url, r);
+    auto queue = std::deque<char>(resp.text.begin(), resp.text.end());
+    auto parser = bencode::Parser(queue);
+    auto resp_object_maybe_none = parser.next();
+
+    // Sanity check
+    if (!resp_object_maybe_none.has_value()) {
+        throw Exception("tracker::send_request(): Tracker violated protocol: response must be a bencoded dictionary");
+    }
+    auto resp_object = resp_object_maybe_none.value();
+    if (resp_object.type != bencode::ObjectType::Dict) {
+        throw Exception("tracker::send_request(): Tracker violated protcol: response must be a bencoded dictionary");
+    }
+
+    // Check whether the tracker returned a failure
+    auto resp_dict = resp_object.dict.value();
+    auto failure_reason = resp_dict.find("failure reason");
+    if (failure_reason != resp_dict.end()) {
+        // The key exists, meaning we have a reason
+        throw Exception(fmt::format("tracker::send_request(): Tracker indicated failure with reason: {}",
+                                    failure_reason->second.str.value()));
+    }
+
+    auto interval = parse_checkin_interval_from_tracker_resp(resp_dict);
+    auto peers_vec = parse_peers_from_tracker_resp(resp_dict);
     return std::tuple<std::vector<peer::Peer>, std::int64_t>(peers_vec, interval);
 }
 }  // namespace tt::tracker
