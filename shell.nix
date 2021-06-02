@@ -8,7 +8,7 @@ in pkgs.mkShell {
   CMAKE_LIBRARY_PATH = "${pkgs.curlFull}/lib";
   CMAKE_PREFIX_PATH = "${pkgs.curlFull}";
   buildInputs = [
-    # Build tooling
+    # Dev tooling
     pkgs.clang_11
     pkgs.clang-tools
     pkgs.cmake
@@ -19,17 +19,22 @@ in pkgs.mkShell {
     pkgs.cppcheck
     pkgs.include-what-you-use
     pkgs.python3
-    pkgs.gtest
     pkgs.valgrind
     pkgs.gdb
 
-    # Libraries we depend on
+    # Libraries
     pkgs.botan2
     pkgs.curlFull
     (pkgs.callPackage ./nix/pkgs/cpr { })
     pkgs.fmt
 
-    # Nix-specific
+    # For tests
+    pkgs.gtest
+    pkgs.aria2
+    pkgs.opentracker
+    pkgs.boost
+
+    # Nix support
     pkgs.niv
     arion.arion
   ];

@@ -8,6 +8,7 @@ stdenv.mkDerivation {
     botan2
     gtest
     fmt
+    boost
   ]; # gtest so integration that integration tests can be run in arion-compose network
   doCheck =
     false; # Integration tests are run in the arion-compose network, not here

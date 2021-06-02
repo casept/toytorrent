@@ -1,4 +1,5 @@
-{ stdenv, fetchFromGitHub, cmake, gtest, gnused, curl, zlib, static ? false }:
+{ stdenv, lib, fetchFromGitHub, cmake, gtest, gnused, curl, zlib, static ? false
+}:
 
 stdenv.mkDerivation rec {
   pname = "cpr";
@@ -30,7 +31,7 @@ stdenv.mkDerivation rec {
     substituteAllInPlace "$out/cpr-config.cmake"
   '';
   #--replace "CPR_INCLUDE_DIR" $out/include \
-  meta = with stdenv.lib; {
+  meta = with lib; {
     homepage = "whoshuu.github.io/cpr/";
     description =
       "A simple wrapper around libcurl for C++ inspired by the excellent Python Requests project";
