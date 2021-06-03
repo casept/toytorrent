@@ -4,14 +4,11 @@
 #include <gtest/gtest.h>
 #include <string.h>
 
-#include <cmrc/cmrc.hpp>
 #include <deque>
 #include <fstream>
 #include <string>
 
 using namespace tt;
-
-CMRC_DECLARE(test_resources);
 
 TEST(Metainfo, parse_single_file_torrent) {
     const std::string expected_announce{"http://explodie.org:6969/announce"};
@@ -21,12 +18,12 @@ TEST(Metainfo, parse_single_file_torrent) {
     const std::int64_t expected_piece_length{524288};
     const std::size_t expected_num_pieces{1760};
     const std::string expected_infohash{"C1AA77DEA674D71FBD85559034B6082B8434D36E"};
-    // The torrent file to test against is embedded in the executable
-    auto fs = cmrc::test_resources::get_filesystem();
-    const auto torrent_file = fs.open("lubuntu-16.04.torrent");
-    std::deque<char> torrent_file_data_deque(torrent_file.begin(), torrent_file.end());
-    auto metainfo = MetaInfo(torrent_file_data_deque);
 
+    // Load file
+    const auto torrent_file_path = "../src/test/testdata/lubuntu-16.04.torrent";
+    const auto metainfo = metainfo_from_path(torrent_file_path);
+
+    // Check
     ASSERT_EQ(metainfo.m_primary_tracker_url, expected_announce);
     ASSERT_EQ(metainfo.m_download_type, expected_download_type);
     ASSERT_EQ(metainfo.m_suggested_name, expected_destination_name);

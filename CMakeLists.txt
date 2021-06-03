@@ -21,8 +21,14 @@ list(
 # Source files only used in the main program, but not tests
 list(APPEND EXE_FILES "src/main.cpp")
 # Source files only used for tests
-list(APPEND TEST_SOURCE_FILES "src/test/main.cpp" "src/test/bencode.cpp"
-     "src/test/metainfo.cpp" "src/test/tracker.cpp")
+list(
+  APPEND
+  TEST_SOURCE_FILES
+  "src/test/main.cpp"
+  "src/test/helpers.cpp"
+  "src/test/bencode.cpp"
+  "src/test/metainfo.cpp"
+  "src/test/tracker.cpp")
 
 project(
   toytorrent
@@ -35,7 +41,8 @@ add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -O0 -g)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -O0 -g
+                                               -fdiagnostics-color=always)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 # Hack to force cmake to add system (libstdc++) header path to
@@ -50,12 +57,9 @@ endif()
 find_package(Botan2 2.0 REQUIRED)
 find_package(CPR REQUIRED)
 find_package(fmt REQUIRED)
+# System deps
+find_package(Threads REQUIRED QUIET)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2 fmt::fmt)
-# Not needed for the build, but to generate correct compile_commands.json
-if(CMAKE_EXPORT_COMPILE_COMMANDS)
-  target_include_directories(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2
-                                                     fmt::fmt)
-endif()
 
 install(
   TARGETS ${PROJECT_NAME}
@@ -64,28 +68,37 @@ install(
 
 # Test setup
 if(BUILD_TESTING)
-  # In order for the test binary to run out-of-tree we need to include test
-  # assets into it
-  set(CMakeRC_DIR "cmake/")
-  find_package(CMakeRC REQUIRED)
-  list(APPEND TEST_DATA_FILES "src/test/testdata/lubuntu-16.04.torrent")
-  cmrc_add_resource_library(test_resources WHENCE "src/test/testdata/"
-                            ${TEST_DATA_FILES})
+  # The tests use boost
+  find_package(
+    Boost
+    COMPONENTS system filesystem
+    REQUIRED)
+  # Hack to force cmake to add system (libstdc++) header path to
+  # compile_commands.json. This also adds a lot of junk, but as long as it
+  # doesn't slow clangd too much I'll deal.
+  if(CMAKE_EXPORT_COMPILE_COMMANDS)
+    set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+        ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+  endif()
 
   enable_testing()
   include(GoogleTest)
   add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES} ${SHARED_FILES})
 
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
-  target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
-  target_link_libraries(${PROJECT_NAME}_test PRIVATE gtest test_resources cpr
-                                                     Botan2::Botan2 fmt::fmt)
-  # Not needed for the build, but to generate correct compile_commands.json
-  if(CMAKE_EXPORT_COMPILE_COMMANDS)
-    target_include_directories(
-      ${PROJECT_NAME}_test PRIVATE gtest test_resources cpr Botan2::Botan2
-                                   fmt::fmt)
-  endif()
+  target_compile_options(
+    ${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic
+                                 -fdiagnostics-color=always)
+  target_link_libraries(
+    ${PROJECT_NAME}_test
+    PRIVATE gtest
+            cpr
+            Boost::headers
+            Boost::system
+            Boost::filesystem
+            Botan2::Botan2
+            fmt::fmt
+            Threads::Threads)
 
   # Useful to run tests in a different environment than the build (for example,
   # outside the Nix build sandbox so we can talk to a real tracker)

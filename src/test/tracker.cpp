@@ -3,26 +3,62 @@
 #include <gtest/gtest.h>
 
 #include "../metainfo.hpp"
+#include "helpers.hpp"
 
 using namespace tt;
 
-/*
-These are integration tests, and are designed to be run with a tracker reachable at a fixed address.
-The easiest way to get them running is using the provided arion-compose.nix to create a docker network
-with several different client implementations serving test torrents and an opentracker instance.
-*/
+TEST(TrackerCommunication, send_started) {
+    const auto torrent_file_path = "../src/test/testdata/lubuntu-16.04-localtrack.torrent";
+    IntegrationTestCtx ctx{torrent_file_path};
+    const auto info = metainfo_from_path(torrent_file_path);
+    const auto us_peer = peer::Peer(peer::ID(), "127.0.0.1", 12345);
+    const auto req = tracker::Request{
+        tracker::RequestKind::STARTED,
+        info.truncated_infohash_binary(),
+        tracker::Stats{0, 0, 0},
+        us_peer,
+    };
+    tracker::send_request(info.m_primary_tracker_url, req);
+}
 
-// TODO: Load and parse the given torrent file and construct a tracker communicator for it.
-// MetaInfo tracker_test_setup() {
-// Load torrent file
-// In order to allow running the test binary outside the source dir, the resources are embedded within it.
+TEST(TrackerCommunication, send_stopped) {
+    const auto torrent_file_path = "../src/test/testdata/lubuntu-16.04-localtrack.torrent";
+    IntegrationTestCtx ctx{torrent_file_path};
+    const auto info = metainfo_from_path(torrent_file_path);
+    const auto us_peer = peer::Peer(peer::ID(), "127.0.0.1", 12345);
+    const auto req = tracker::Request{
+        tracker::RequestKind::STOPPED,
+        info.truncated_infohash_binary(),
+        tracker::Stats{0, 0, 0},
+        us_peer,
+    };
+    tracker::send_request(info.m_primary_tracker_url, req);
+}
 
-//}
+TEST(TrackerCommunication, send_completed) {
+    const auto torrent_file_path = "../src/test/testdata/lubuntu-16.04-localtrack.torrent";
+    IntegrationTestCtx ctx{torrent_file_path};
+    const auto info = metainfo_from_path(torrent_file_path);
+    const auto us_peer = peer::Peer(peer::ID(), "127.0.0.1", 12345);
+    const auto req = tracker::Request{
+        tracker::RequestKind::COMPLETED,
+        info.truncated_infohash_binary(),
+        tracker::Stats{0, 0, 0},
+        us_peer,
+    };
+    tracker::send_request(info.m_primary_tracker_url, req);
+}
 
-TEST(TrackerCommunication, send_started) {}
-
-TEST(TrackerCommunication, send_stopped) {}
-
-TEST(TrackerCommunication, send_completed) {}
-
-TEST(TrackerCommunication, send_update) {}
+TEST(TrackerCommunication, send_update) {
+    const auto torrent_file_path = "../src/test/testdata/lubuntu-16.04-localtrack.torrent";
+    IntegrationTestCtx ctx{torrent_file_path};
+    const auto info = metainfo_from_path(torrent_file_path);
+    const auto us_peer = peer::Peer(peer::ID(), "127.0.0.1", 12345);
+    const auto req = tracker::Request{
+        tracker::RequestKind::UPDATE,
+        info.truncated_infohash_binary(),
+        tracker::Stats{0, 0, 0},
+        us_peer,
+    };
+    tracker::send_request(info.m_primary_tracker_url, req);
+}
