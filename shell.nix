@@ -9,8 +9,9 @@ in pkgs.mkShell {
   CMAKE_PREFIX_PATH = "${pkgs.curlFull}";
   buildInputs = [
     # Dev tooling
-    pkgs.clang_11
+    pkgs.clang_12
     pkgs.clang-tools
+    pkgs.ccache
     pkgs.cmake
     pkgs.extra-cmake-modules
     pkgs.cmake-format
