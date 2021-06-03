@@ -1,6 +1,5 @@
 #include "metainfo.hpp"
 
-#include <bits/stdint-uintn.h>
 #include <botan-2/botan/hash.h>
 #include <botan-2/botan/hex.h>
 
@@ -8,13 +7,42 @@
 #include <array>
 #include <cstdint>
 #include <deque>
+#include <fstream>
+#include <iostream>
 #include <iterator>
 #include <map>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "bencode.hpp"
+
+static std::ifstream read_torrent_file(const std::string_view& path) {
+    std::ifstream f{std::string(path), std::ios::in | std::ios::binary};
+    if (!f) {
+        throw std::runtime_error{"The torrent file cannot be opened"};
+    }
+    return f;
+}
+
 namespace tt {
+MetaInfo metainfo_from_path(const std::string_view& path) {
+    auto f = read_torrent_file(path);
+    std::deque<char> data{};
+    while (true) {
+        const char byte = f.get();
+        if (f.eof()) {
+            break;
+        }
+        data.push_back(byte);
+    }
+    if (f.bad()) {
+        throw std::runtime_error{"Failed to read .torrent file!"};
+    }
+    f.close();
+    return tt::MetaInfo(data);
+}
+
 MetaInfo::MetaInfo(std::deque<char> in) {
     // metainfo files are basically just a giant dictionary
     auto top_level_parser = bencode::Parser(in);

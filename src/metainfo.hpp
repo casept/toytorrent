@@ -51,4 +51,6 @@ class MetaInfo {
     // Returns the total size of this torrent, in bytes.
     std::size_t total_size() const;
 };
+// Open the file at the given path and parse it's data into a MetaInfo instance.
+MetaInfo metainfo_from_path(const std::string_view& path);
 }  // namespace tt
