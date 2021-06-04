@@ -16,7 +16,7 @@ class Exception : public std::exception {
    public:
     std::string m_msg{};
     Exception(const std::string_view&);
-    const char* what() const throw();
+    [[nodiscard]] const char* what() const noexcept;
 };
 
 const std::size_t ID_Length = 20;
@@ -33,6 +33,8 @@ class ID {
     inline bool operator!=(const ID& rhs) { return this->m_id != rhs.m_id; };
     // Get string representation.
     std::string as_string() const;
+    // Get byte representation.
+    std::vector<std::uint8_t> as_byte_vec() const;
 
    private:
     std::string m_id;
@@ -58,7 +60,7 @@ class Peer {
 
     Peer(const ID& id, std::string const& ip, const std::uint16_t port);
     // Establish a connection to this peer.
-    void connect(const std::string_view& truncated_infohash);
+    void handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id);
     // Check whether a connection is established.
     bool is_connected() const;
 };

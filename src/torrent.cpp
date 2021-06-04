@@ -58,15 +58,15 @@ void Torrent::download() {
         if ((peer.m_id != this->m_us_peer.m_id) && (peer.m_ip != this->m_us_peer.m_ip) &&
             (peer.m_port != this->m_us_peer.m_port)) {
             try {
-                peer.connect(this->m_metainfo.truncated_infohash());
+                peer.handshake(this->m_metainfo.truncated_infohash_binary(), this->m_us_peer.m_id);
             } catch (const peer::Exception &e) {
                 // TODO: Send into a retry queue and do exponential backoff or something
                 log::log(log::Level::Warning, log::Subsystem::Torrent,
                          fmt::format("Torrent::download(): Peer failed: {}", e.what()));
             }
         }
-        log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Tried all peers");
     }
+    log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Tried all peers");
 
     // Tracker checkout
     this->m_tracker_req.kind = tracker::RequestKind::STOPPED;

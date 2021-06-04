@@ -12,6 +12,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <optional>
@@ -31,7 +32,7 @@ class Exception : public std::exception {
    public:
     std::string m_msg{};
     Exception(const std::string_view& msg, const std::optional<int> errno_val, const std::optional<int> gai_err);
-    const char* what() const throw();
+    const char* what() const noexcept;
 };
 
 // A socket.
@@ -48,13 +49,16 @@ class Sock {
      * resolves the address and opens a socket.
      *
      * For now, only connect()-ing to socket is supported.
+     *
+     * Will throw on failure or timeout.
      */
-    Sock(const std::string_view& addr, const uint16_t port, const Proto proto);
+    Sock(const std::string_view& addr, const uint16_t port, const Proto proto,
+         std::optional<std::uint64_t> timeout_millis);
     /*
      * Send the given data, retrying until it gets through.
-     * TODO: Timeout
+     * If timeout is set, an exception will be raised if the transfer doesn't complete in time.
      */
-    void send(const std::vector<uint8_t>& data);
+    void send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> timeout_millis);
 
     ~Sock();
 };

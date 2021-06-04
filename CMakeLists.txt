@@ -41,8 +41,19 @@ add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -O0 -g
-                                               -fdiagnostics-color=always)
+target_compile_options(
+  ${PROJECT_NAME}
+  PRIVATE -Wall
+          -Wextra
+          -Wpedantic
+          -O0
+          -g
+          -fdiagnostics-color=always
+          -fsanitize=address
+          -fsanitize=undefined
+          -fno-omit-frame-pointer)
+target_link_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer
+                    -fsanitize=address -fsanitize=undefined)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 # Hack to force cmake to add system (libstdc++) header path to

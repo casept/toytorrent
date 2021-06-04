@@ -61,10 +61,10 @@ std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& str) {
     while (i < str.size()) {
         // Extract from string
         std::array<uint8_t, smolsocket::util::V6_Len_Bytes> ip{};
-        std::transform(str.substr(i, i + 4).begin(), str.substr(i, i + 4).end(), ip.begin(),
-                       [](char x) { return static_cast<uint8_t>(x); });
+        const std::string_view ip_substr = str.substr(i, 4);
+        std::transform(ip_substr.begin(), ip_substr.end(), ip.begin(), [](char x) { return static_cast<uint8_t>(x); });
         std::array<char, 2> port;
-        std::copy_n(str.substr(i + 4, i + 6).begin(), 2, port.begin());
+        std::copy_n(str.substr(i + 4, 2).begin(), 2, port.begin());
         // Convert to usable repr
         std::string ip_str = smolsocket::util::ip_to_str(ip, smolsocket::AddrKind::V4);
         uint16_t port_native_endian = smolsocket::util::ntoh(port);
@@ -137,7 +137,7 @@ static std::vector<peer::Peer> parse_peers_from_tracker_resp(const std::map<std:
             "absent");
     }
     // Trackers may return BEP52-style compact peer lists unprompted, so we have to always be ready to parse both
-    std::vector<peer::Peer> peers_vec{};
+    std::vector<peer::Peer> peers_vec;
     if (peers->second.list.has_value()) {
         // Classic peer list
         auto peers_bencoded = peers->second.list.value();

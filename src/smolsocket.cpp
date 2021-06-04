@@ -2,7 +2,6 @@
 
 extern "C" {
 #include <arpa/inet.h>
-#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -11,6 +10,8 @@ extern "C" {
 }
 
 #include <array>
+#include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -29,9 +30,27 @@ Exception::Exception(const std::string_view& msg, const std::optional<int> errno
     }
 }
 
-const char* Exception::what() const throw() { return this->m_msg.c_str(); }
+const char* Exception::what() const noexcept { return this->m_msg.c_str(); }
 
-Sock::Sock(const std::string_view& addr, const uint16_t port, const Proto proto) {
+static void enable_timeout(int sockfd, std::optional<std::uint64_t> timeout_millis) {
+    // TODO: This is Linux-only, but select() based impl looks to be a massive pain
+    if (timeout_millis.has_value()) {
+        struct timeval timeout {};
+        timeout.tv_sec = timeout_millis.value() / 1000;
+        timeout.tv_usec = (timeout_millis.value() * 1000) % 1000;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    }
+}
+
+static void disable_timeout(int sockfd) {
+    struct timeval disable_timeout;
+    disable_timeout.tv_sec = 0;
+    disable_timeout.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &disable_timeout, sizeof(disable_timeout));
+}
+
+Sock::Sock(const std::string_view& addr, const uint16_t port, const Proto proto,
+           std::optional<std::uint64_t> timeout_millis) {
     this->m_proto = proto;
 
     // Give hints
@@ -61,7 +80,7 @@ Sock::Sock(const std::string_view& addr, const uint16_t port, const Proto proto)
 
     // Only return 1st addr for now
     // TODO: Deal with >1
-    if (res == NULL) {
+    if (res == nullptr) {
         throw Exception("smolsocket::Sock::Sock(): Lookup result contains no IP addresses", {}, {});
     }
     switch (res->ai_family) {
@@ -85,25 +104,34 @@ Sock::Sock(const std::string_view& addr, const uint16_t port, const Proto proto)
     }
     this->m_sockfd = sock;
 
-    // And connect
+    // Set timeout if desired
+    enable_timeout(this->m_sockfd, timeout_millis);
+
     // TODO: Also support bind()-ing
-    err = connect(sock, res->ai_addr, res->ai_addrlen);
+    // And connect
+    err = connect(this->m_sockfd, res->ai_addr, res->ai_addrlen);
     if (err == -1) {
         freeaddrinfo(res);
+        disable_timeout(this->m_sockfd);
         throw Exception("smolsocket::Sock::Sock(): Failed to connect() socket: ", {errno}, {});
     }
+    // Re-disable timeout
+    disable_timeout(this->m_sockfd);
     freeaddrinfo(res);
 }
 
-void Sock::send(const std::vector<uint8_t>& data) {
+void Sock::send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> timeout_millis) {
+    enable_timeout(this->m_sockfd, timeout_millis);
     size_t sent = 0;
     while (sent < data.size()) {
         const int ret = ::send(this->m_sockfd, data.data() + sent, data.size() - sent, 0);
         if (ret == -1) {
+            disable_timeout(this->m_sockfd);
             throw Exception("smolsocket::Sock::send(): Failed to send(): ", {errno}, {});
         }
         sent += (size_t)ret;
     }
+    disable_timeout(this->m_sockfd);
 }
 
 Sock::~Sock() { close(this->m_sockfd); }
@@ -125,7 +153,7 @@ std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const Addr
             std::exit(EXIT_FAILURE);
             break;
     }
-    if (res == NULL) {
+    if (res == nullptr) {
         throw Exception(
             "smolsocket::util::ip_to_str(): Failed to convert numeric IP to string representation: inet_ntop failed: ",
             {errno}, {});
@@ -135,8 +163,8 @@ std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const Addr
 
 uint16_t ntoh(uint16_t x) { return ::ntohs(x); }
 uint16_t ntoh(std::array<char, 2> arr) {
-    uint16_t x = static_cast<uint16_t>(arr[1]);
-    x = x | (static_cast<uint16_t>(arr[0]) << 8);
+    uint16_t x = static_cast<uint16_t>(static_cast<unsigned char>(arr[1]));
+    x = x | (static_cast<uint16_t>(static_cast<unsigned char>(arr[0])) << 8);
     return ::ntohs(x);
 }
 uint16_t hton(uint16_t x) { return ::htons(x); }
