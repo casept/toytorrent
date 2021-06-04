@@ -87,8 +87,14 @@ if(BUILD_TESTING)
 
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
   target_compile_options(
-    ${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic
-                                 -fdiagnostics-color=always)
+    ${PROJECT_NAME}_test
+    PRIVATE -Wall
+            -Wextra
+            -Wpedantic
+            -fdiagnostics-color=always
+            -fsanitize=address
+            -fsanitize=undefined
+            -fno-omit-frame-pointer)
   target_link_libraries(
     ${PROJECT_NAME}_test
     PRIVATE gtest
@@ -99,7 +105,8 @@ if(BUILD_TESTING)
             Botan2::Botan2
             fmt::fmt
             Threads::Threads)
-
+  target_link_options(${PROJECT_NAME}_test PRIVATE -fno-omit-frame-pointer
+                      -fsanitize=address -fsanitize=undefined)
   # Useful to run tests in a different environment than the build (for example,
   # outside the Nix build sandbox so we can talk to a real tracker)
   if(INSTALL_TESTS)

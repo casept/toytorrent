@@ -17,10 +17,10 @@ TEST(Metainfo, parse_single_file_torrent) {
     const std::int64_t expected_file_length{922746880};
     const std::int64_t expected_piece_length{524288};
     const std::size_t expected_num_pieces{1760};
-    const std::string expected_infohash{"C1AA77DEA674D71FBD85559034B6082B8434D36E"};
+    const std::string expected_infohash{"c1aa77dea674d71fbd85559034b6082b8434d36e"};
 
     // Load file
-    const auto torrent_file_path = "../src/test/testdata/lubuntu-16.04.torrent";
+    const auto torrent_file_path = "../testdata/lubuntu-16.04.torrent";
     const auto metainfo = metainfo_from_path(torrent_file_path);
 
     // Check

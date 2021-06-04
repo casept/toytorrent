@@ -1,5 +1,6 @@
 #include "metainfo.hpp"
 
+#include <bits/stdint-uintn.h>
 #include <botan-2/botan/hash.h>
 #include <botan-2/botan/hex.h>
 
@@ -99,12 +100,15 @@ MetaInfo::MetaInfo(std::deque<char> in) {
 
 std::vector<uint8_t> MetaInfo::infohash_binary() const {
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
-    // const_cast should be fine here because the buffer isn't written to
-    auto data = const_cast<char*>(this->m_bencoded_info.data());
-    auto sec_hash = hasher.get()->process(reinterpret_cast<uint8_t*>(data), this->m_bencoded_info.size());
-    std::vector<std::uint8_t> hash;
-    hash.reserve(sec_hash.size());
-    std::copy(sec_hash.begin(), sec_hash.end(), hash.begin());
+    // Copy to avoid casting away const
+    std::vector<uint8_t> copy{};
+    for (char byte : this->m_bencoded_info) {
+        copy.push_back(static_cast<uint8_t>(byte));
+    }
+    // Hash
+    auto hasher_real = hasher.get();
+    hasher_real->update(copy);
+    auto hash = hasher_real->final_stdvec();
     return hash;
 }
 
