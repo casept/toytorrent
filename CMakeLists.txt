@@ -28,7 +28,8 @@ list(
   "src/test/helpers.cpp"
   "src/test/bencode.cpp"
   "src/test/metainfo.cpp"
-  "src/test/tracker.cpp")
+  "src/test/tracker.cpp"
+  "src/test/peer.cpp")
 
 project(
   toytorrent

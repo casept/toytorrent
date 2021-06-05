@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <vector>
@@ -46,8 +47,12 @@ struct Request {
     std::vector<std::uint8_t> trunc_infohash_binary;
     // Statistics the tracker would like to know from us
     Stats stats;
-    // The peer object we use to represent ourselves
-    peer::Peer us;
+    // Our ID
+    peer::ID our_id;
+    // Our IP
+    std::string our_ip;
+    // Our port
+    std::uint16_t our_port;
 };
 
 // Sends a request to the tracker.

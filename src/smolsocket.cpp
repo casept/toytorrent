@@ -163,8 +163,8 @@ std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const Addr
 
 uint16_t ntoh(uint16_t x) { return ::ntohs(x); }
 uint16_t ntoh(std::array<char, 2> arr) {
-    uint16_t x = static_cast<uint16_t>(static_cast<unsigned char>(arr[1]));
-    x = x | (static_cast<uint16_t>(static_cast<unsigned char>(arr[0])) << 8);
+    uint16_t x = static_cast<uint16_t>(static_cast<unsigned char>(arr[0]));
+    x = x | (static_cast<uint16_t>(static_cast<unsigned char>(arr[1])) << 8);
     return ::ntohs(x);
 }
 uint16_t hton(uint16_t x) { return ::htons(x); }

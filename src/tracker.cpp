@@ -19,8 +19,8 @@ Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
 
 const char* Exception::what() const throw() { return this->m_msg.c_str(); }
 
-bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::string, bencode::Object> dict,
-                                              std::string throw_msg) {
+static bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::string, bencode::Object> dict,
+                                                     std::string throw_msg) {
     auto dict_entry = dict.find(key);
     if (dict_entry == dict.end()) {
         // Key doesn't exist
@@ -30,8 +30,9 @@ bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::str
     return obj;
 }
 
-std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::Object> list) {
+static std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::Object> list) {
     std::vector<peer::Peer> peers{};
+    peers.reserve(list.size());
     for (bencode::Object const& peer_entry : list) {
         if (!peer_entry.dict.has_value()) {
             throw Exception("Tracker violated protocol: peer entry is not a bencoded dictionary");
@@ -41,17 +42,17 @@ std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::Object> 
                                                          "Tracker violated protocol: all peers must have peer ID");
         auto peer_ip_obj =
             get_object_from_dict_or_throw("ip", peer_dict, "Tracker violated protocol: all peers must have IP address");
+        const std::string_view peer_ip_view = std::string_view(peer_ip_obj.str.value());
         auto peer_port_obj =
             get_object_from_dict_or_throw("port", peer_dict, "Tracker violated protocol: all peers must have port");
-        std::uint32_t peer_port = static_cast<std::int64_t>(peer_port_obj.integer.value());
-        peer::ID peer_id;
-        std::copy_n(peer_id_obj.str.value().data(), peer::ID_Length, peer_id.as_string().begin());
-        peers.push_back(peer::Peer(peer_id, peer_ip_obj.str.value(), peer_port));
+        const std::uint16_t peer_port = static_cast<std::int64_t>(peer_port_obj.integer.value());
+        const peer::ID peer_id{peer_id_obj.str.value()};
+        peers.emplace_back(peer_id, peer_ip_view, peer_port);
     }
     return peers;
 }
 
-std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& str) {
+static std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& str) {
     std::vector<peer::Peer> peers{};
     size_t i = 0;
     // v4 addresses are coded as 4 bytes for address, 2 bytes for port
@@ -69,7 +70,7 @@ std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& str) {
         std::string ip_str = smolsocket::util::ip_to_str(ip, smolsocket::AddrKind::V4);
         uint16_t port_native_endian = smolsocket::util::ntoh(port);
         // Compact format has no ID, generate at random
-        peers.push_back(peer::Peer(peer::ID(), ip_str, port_native_endian));
+        peers.emplace_back(peer::ID(), ip_str, port_native_endian);
         i += 6;
     }
     return peers;
@@ -104,8 +105,8 @@ static cpr::Response query_tracker(const std::string_view& announce_url, const R
     }
     auto event_str = req_kind_to_str(r.kind);
     cpr::Parameters p = cpr::Parameters{{"info_hash", info_hash_str},
-                                        {"peer_id", std::string(r.us.m_id.as_string())},
-                                        {"port", std::to_string(r.us.m_port)},
+                                        {"peer_id", r.our_id.as_string()},
+                                        {"port", std::to_string(r.our_port)},
                                         {"uploaded", std::to_string(r.stats.bytes_uploaded)},
                                         {"downloaded", std::to_string(r.stats.bytes_downloaded)},
                                         {"left", std::to_string(r.stats.bytes_left)},

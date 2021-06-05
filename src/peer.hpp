@@ -28,6 +28,8 @@ class ID {
     ID();
     // Generate a new ID based on given 20-byte (plus \0-terminator) string.
     ID(const std::array<char, ID_Length>& str);
+    // Generate a new ID based on given string.
+    ID(const std::string_view& str);
     // Equal if the internal ID field is the same.
     inline bool operator==(const ID& rhs) { return this->m_id == rhs.m_id; };
     inline bool operator!=(const ID& rhs) { return this->m_id != rhs.m_id; };
@@ -40,25 +42,24 @@ class ID {
     std::string m_id;
 };
 
-// An active connection to a peer.
-class Conn {
-   public:
-    bool m_we_choked = false;
-    bool m_we_interested = false;
-    smolsocket::Sock m_sock;
-    Conn(smolsocket::Sock m_sock);
-};
-
 class Peer {
    private:
-    std::optional<Conn> m_conn{};
+    std::optional<smolsocket::Sock> m_sock{};
+    bool m_we_choked = false;
+    bool m_we_interested = false;
 
    public:
     std::string m_ip;
     std::uint16_t m_port;
     ID m_id;
 
-    Peer(const ID& id, std::string const& ip, const std::uint16_t port);
+    Peer(const ID& id, const std::string_view& ip, const std::uint16_t port);
+    Peer() = delete;
+    // The underlying socket should only ever be touched by one instance.
+    Peer(const Peer&) = delete;
+    Peer& operator=(const Peer&) = delete;
+    Peer(Peer&&) = delete;
+    Peer& operator=(Peer&&) = delete;
     // Establish a connection to this peer.
     void handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id);
     // Check whether a connection is established.

@@ -54,6 +54,11 @@ class Sock {
      */
     Sock(const std::string_view& addr, const uint16_t port, const Proto proto,
          std::optional<std::uint64_t> timeout_millis);
+    //  There should only ever be a single instance managing a particular socket.
+    Sock(const Sock&) = delete;
+    Sock& operator=(const Sock&) = delete;
+    Sock(Sock&&) = delete;
+    Sock& operator=(Sock&&) = delete;
     /*
      * Send the given data, retrying until it gets through.
      * If timeout is set, an exception will be raised if the transfer doesn't complete in time.

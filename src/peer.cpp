@@ -1,12 +1,12 @@
 #include "peer.hpp"
 
-#include <bits/stdint-uintn.h>
 #include <botan-2/botan/auto_rng.h>
 #include <fmt/core.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "log.hpp"
@@ -35,6 +35,7 @@ ID::ID() {
 }
 
 ID::ID(const std::array<char, ID_Length>& str) { std::copy(str.begin(), str.end(), this->m_id.begin()); }
+ID::ID(const std::string_view& str) { std::copy_n(str.begin(), ID_Length, this->m_id.begin()); }
 
 std::string ID::as_string() const { return std::string(this->m_id.data()); }
 
@@ -46,23 +47,20 @@ std::vector<std::uint8_t> ID::as_byte_vec() const {
     return result;
 };
 
-Conn::Conn(smolsocket::Sock sock) : m_sock(sock) {}
-
-Peer::Peer(const ID& id, std::string const& ip, const std::uint16_t port) : m_ip(ip), m_port(port), m_id(id) {}
+Peer::Peer(const ID& id, const std::string_view& ip, const std::uint16_t port) : m_ip(ip), m_port(port), m_id(id){};
 
 void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id) {
     // Create connection
     try {
         log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Peer::connect(): Trying {}", *this));
-        this->m_conn = {{smolsocket::Sock(this->m_ip, this->m_port, smolsocket::Proto::TCP, 2000)}};
+        this->m_sock{this->m_ip, this->m_port, smolsocket::Proto::TCP, 2000};
     } catch (const smolsocket::Exception& e) {
-        auto msg = fmt::format("Peer::connect(): Failed to connect: {}", e.what());
+        auto msg = fmt::format("Conn::Conn(): Failed to connect: {}", e.what());
         log::log(log::Level::Warning, log::Subsystem::Peer, msg);
         throw Exception(msg);
     }
-
     // Handshake
-    auto& sock = this->m_conn.value().m_sock;
+    auto& sock = this->m_sock.value();
     try {
         // Fixed handshake bytes
         sock.send(Peer_Handshake_Magic, 2000);
@@ -85,5 +83,5 @@ void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const 
              fmt::format("Peer::connect(): connection established to peer {}", *this));
 }
 
-bool Peer::is_connected() const { return this->m_conn.has_value(); }
+bool Peer::is_connected() const { return this->m_sock.has_value(); }
 }  // namespace tt::peer
