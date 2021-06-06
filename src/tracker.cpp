@@ -138,26 +138,18 @@ static std::vector<peer::Peer> parse_peers_from_tracker_resp(const std::map<std:
             "absent");
     }
     // Trackers may return BEP52-style compact peer lists unprompted, so we have to always be ready to parse both
-    std::vector<peer::Peer> peers_vec;
     if (peers->second.list.has_value()) {
         // Classic peer list
         auto peers_bencoded = peers->second.list.value();
-        peers_vec = bencode_peer_list_to_peers(peers_bencoded);
+        return bencode_peer_list_to_peers(peers_bencoded);
     } else if (peers->second.str.has_value()) {
         // Compact peer list
         auto peers_bencoded = peers->second.str.value();
-        peers_vec = bep52_peer_str_to_peers(peers_bencoded);
+        return bep52_peer_str_to_peers(peers_bencoded);
     } else {
         // Garbage
         throw Exception("tracker::send_request(): Tracker violated protocol: peers weren't list or string");
     }
-
-    tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker, "tracker::send_request(): Got peers from tracker");
-    for (const auto& peer : peers_vec) {
-        tt::log::log(tt::log::Level::Debug, tt::log::Subsystem::Tracker,
-                     fmt::format("tracker::send_request(): peer: {}", peer));
-    }
-    return peers_vec;
 }
 
 static std::int64_t parse_checkin_interval_from_tracker_resp(const std::map<std::string, bencode::Object>& resp_dict) {
@@ -201,6 +193,6 @@ std::tuple<std::vector<peer::Peer>, std::int64_t> send_request(const std::string
 
     auto interval = parse_checkin_interval_from_tracker_resp(resp_dict);
     auto peers_vec = parse_peers_from_tracker_resp(resp_dict);
-    return std::tuple<std::vector<peer::Peer>, std::int64_t>(peers_vec, interval);
+    return std::tuple<std::vector<peer::Peer>, std::int64_t>(std::move(peers_vec), interval);
 }
 }  // namespace tt::tracker

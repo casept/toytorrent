@@ -44,7 +44,7 @@ class ID {
 
 class Peer {
    private:
-    std::optional<smolsocket::Sock> m_sock{};
+    std::optional<smolsocket::Sock> m_sock;
     bool m_we_choked = false;
     bool m_we_interested = false;
 
@@ -55,15 +55,14 @@ class Peer {
 
     Peer(const ID& id, const std::string_view& ip, const std::uint16_t port);
     Peer() = delete;
+    // Moving will invalidate the old peer.
+    Peer(Peer&& src);
     // The underlying socket should only ever be touched by one instance.
     Peer(const Peer&) = delete;
     Peer& operator=(const Peer&) = delete;
-    Peer(Peer&&) = delete;
     Peer& operator=(Peer&&) = delete;
     // Establish a connection to this peer.
     void handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id);
-    // Check whether a connection is established.
-    bool is_connected() const;
 };
 }  // namespace tt::peer
 

@@ -15,6 +15,7 @@ extern "C" {
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -105,36 +106,44 @@ Sock::Sock(const std::string_view& addr, const uint16_t port, const Proto proto,
     this->m_sockfd = sock;
 
     // Set timeout if desired
-    enable_timeout(this->m_sockfd, timeout_millis);
+    enable_timeout(this->m_sockfd.value(), timeout_millis);
 
     // TODO: Also support bind()-ing
     // And connect
-    err = connect(this->m_sockfd, res->ai_addr, res->ai_addrlen);
+    err = connect(this->m_sockfd.value(), res->ai_addr, res->ai_addrlen);
     if (err == -1) {
         freeaddrinfo(res);
-        disable_timeout(this->m_sockfd);
+        disable_timeout(this->m_sockfd.value());
         throw Exception("smolsocket::Sock::Sock(): Failed to connect() socket: ", {errno}, {});
     }
     // Re-disable timeout
-    disable_timeout(this->m_sockfd);
+    disable_timeout(this->m_sockfd.value());
     freeaddrinfo(res);
 }
 
+Sock::Sock(Sock&& src) : m_sockfd(src.m_sockfd), m_addr_kind(src.m_addr_kind), m_proto(src.m_proto) {
+    src.m_sockfd = -1;
+}
+
 void Sock::send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> timeout_millis) {
-    enable_timeout(this->m_sockfd, timeout_millis);
+    enable_timeout(this->m_sockfd.value(), timeout_millis);
     size_t sent = 0;
     while (sent < data.size()) {
-        const int ret = ::send(this->m_sockfd, data.data() + sent, data.size() - sent, 0);
+        const int ret = ::send(this->m_sockfd.value(), data.data() + sent, data.size() - sent, 0);
         if (ret == -1) {
-            disable_timeout(this->m_sockfd);
+            disable_timeout(this->m_sockfd.value());
             throw Exception("smolsocket::Sock::send(): Failed to send(): ", {errno}, {});
         }
         sent += (size_t)ret;
     }
-    disable_timeout(this->m_sockfd);
+    disable_timeout(this->m_sockfd.value());
 }
 
-Sock::~Sock() { close(this->m_sockfd); }
+Sock::~Sock() {
+    if (this->m_sockfd.has_value()) {
+        close(this->m_sockfd.value());
+    }
+}
 
 namespace util {
 std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const AddrKind kind) {

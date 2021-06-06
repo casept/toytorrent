@@ -16,6 +16,7 @@ namespace tt::peer {
 
 const std::vector<std::uint8_t> Peer_Handshake_Magic = {19,  'B', 'i', 't', 'T', 'o', 'r', 'r', 'e', 'n',
                                                         't', ' ', 'p', 'r', 'o', 't', 'o', 'c', 'o', 'l'};
+const std::optional<std::uint64_t> Timeout{2000};
 
 Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
 
@@ -47,29 +48,43 @@ std::vector<std::uint8_t> ID::as_byte_vec() const {
     return result;
 };
 
-Peer::Peer(const ID& id, const std::string_view& ip, const std::uint16_t port) : m_ip(ip), m_port(port), m_id(id){};
+Peer::Peer(const ID& id, const std::string_view& ip, const std::uint16_t port)
+    : m_sock({}), m_ip(ip), m_port(port), m_id(id){};
+
+Peer::Peer(Peer&& src)
+    : m_sock(std::move(src.m_sock)),
+      m_we_choked(src.m_we_choked),
+      m_we_interested(src.m_we_interested),
+      m_ip(std::move(src.m_ip)),
+      m_port(src.m_port),
+      m_id(std::move(src.m_id)) {
+    // FIXME: We should invalidate the old one's socket,
+    // but initialization in this language is so fucked that after 2 hours of trying I can't figure out how to
+    // re-initialize a class field without having to copy-construct.
+}
 
 void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id) {
+    using namespace smolsocket;
+
     // Create connection
     try {
         log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Peer::connect(): Trying {}", *this));
-        this->m_sock{this->m_ip, this->m_port, smolsocket::Proto::TCP, 2000};
+        this->m_sock.emplace(Sock(m_ip, m_port, smolsocket::Proto::TCP, Timeout));
     } catch (const smolsocket::Exception& e) {
         auto msg = fmt::format("Conn::Conn(): Failed to connect: {}", e.what());
         log::log(log::Level::Warning, log::Subsystem::Peer, msg);
         throw Exception(msg);
     }
     // Handshake
-    auto& sock = this->m_sock.value();
     try {
         // Fixed handshake bytes
-        sock.send(Peer_Handshake_Magic, 2000);
+        m_sock.value().send(Peer_Handshake_Magic, Timeout);
         // Supported protocol extensions
-        sock.send({0, 0, 0, 0, 0, 0, 0, 0}, 2000);
+        m_sock.value().send({0, 0, 0, 0, 0, 0, 0, 0}, Timeout);
         // Infohash
-        sock.send(truncated_infohash, 2000);
+        m_sock.value().send(truncated_infohash, 2000);
         // Our peer ID
-        sock.send(our_id.as_byte_vec(), 2000);
+        m_sock.value().send(our_id.as_byte_vec(), 2000);
         // We're technically supposed to verify the ID of the other peer here,
         // but that's impossible because compact format tracker messages contain no ID.
         // Therefore, just accept anything here.
@@ -82,6 +97,4 @@ void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const 
     log::log(log::Level::Debug, log::Subsystem::Peer,
              fmt::format("Peer::connect(): connection established to peer {}", *this));
 }
-
-bool Peer::is_connected() const { return this->m_sock.has_value(); }
 }  // namespace tt::peer
