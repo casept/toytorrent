@@ -37,26 +37,47 @@ project(
   VERSION 0.1
   DESCRIPTION "A toy torrent client"
   LANGUAGES CXX)
-add_executable(${PROJECT_NAME} ${EXE_FILES} ${SHARED_FILES})
+add_executable(${PROJECT_NAME} ${EXE_FILES})
+add_library(lib${PROJECT_NAME} STATIC ${SHARED_FILES})
 
 # We want ISO C++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-target_compile_options(
-  ${PROJECT_NAME}
-  PRIVATE -Wall
-          -Wextra
-          -Wpedantic
-          -O0
-          -g
-          -fdiagnostics-color=always
-          -fsanitize=address
-          -fsanitize=undefined
-          -fno-omit-frame-pointer)
-target_link_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer
-                    -fsanitize=address -fsanitize=undefined)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+target_compile_features(lib${PROJECT_NAME} PRIVATE cxx_std_20)
+
+# 3rd-party deps
+find_package(Botan2 2.0 REQUIRED)
+find_package(CPR REQUIRED)
+find_package(fmt REQUIRED)
+# System deps
+find_package(Threads REQUIRED QUIET)
+
+# Compile options for debugging
+list(
+  APPEND
+  DEBUG_COMPILE_OPTS
+  -Wall
+  -Wextra
+  -Wpedantic
+  -O0
+  -g
+  -fdiagnostics-color=always
+  -fsanitize=address
+  -fsanitize=undefined
+  -fno-omit-frame-pointer)
+list(APPEND DEBUG_LD_OPTS -fno-omit-frame-pointer -fsanitize=address
+     -fsanitize=undefined)
+
+# Core library
+target_compile_options(lib${PROJECT_NAME} PRIVATE ${DEBUG_COMPILE_OPTS})
+target_link_libraries(lib${PROJECT_NAME} PRIVATE cpr Botan2::Botan2 fmt::fmt)
+
+# Executable
+target_compile_options(${PROJECT_NAME} PRIVATE ${DEBUG_COMPILE_OPTS})
+target_link_options(${PROJECT_NAME} PRIVATE ${DEBUG_LD_OPTS})
+target_link_libraries(${PROJECT_NAME} PRIVATE lib${PROJECT_NAME})
 
 # Hack to force cmake to add system (libstdc++) header path to
 # compile_commands.json. This also adds a lot of junk, but as long as it doesn't
@@ -65,14 +86,6 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
   set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
       ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
-
-# 3rd-party deps
-find_package(Botan2 2.0 REQUIRED)
-find_package(CPR REQUIRED)
-find_package(fmt REQUIRED)
-# System deps
-find_package(Threads REQUIRED QUIET)
-target_link_libraries(${PROJECT_NAME} PRIVATE cpr Botan2::Botan2 fmt::fmt)
 
 install(
   TARGETS ${PROJECT_NAME}
@@ -96,30 +109,15 @@ if(BUILD_TESTING)
 
   enable_testing()
   include(GoogleTest)
-  add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES} ${SHARED_FILES})
+  add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES})
 
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
-  target_compile_options(
-    ${PROJECT_NAME}_test
-    PRIVATE -Wall
-            -Wextra
-            -Wpedantic
-            -fdiagnostics-color=always
-            -fsanitize=address
-            -fsanitize=undefined
-            -fno-omit-frame-pointer)
+  target_compile_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_COMPILE_OPTS})
   target_link_libraries(
     ${PROJECT_NAME}_test
-    PRIVATE gtest
-            cpr
-            Boost::headers
-            Boost::system
-            Boost::filesystem
-            Botan2::Botan2
-            fmt::fmt
-            Threads::Threads)
-  target_link_options(${PROJECT_NAME}_test PRIVATE -fno-omit-frame-pointer
-                      -fsanitize=address -fsanitize=undefined)
+    PRIVATE lib${PROJECT_NAME} gtest Boost::headers Boost::system
+            Boost::filesystem Threads::Threads)
+  target_link_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_LD_OPTS})
   # Useful to run tests in a different environment than the build (for example,
   # outside the Nix build sandbox so we can talk to a real tracker)
   if(INSTALL_TESTS)
