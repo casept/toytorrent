@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "log.hpp"
+#include "peer_message.hpp"
 #include "smolsocket.hpp"
 
 namespace tt::peer {
@@ -64,12 +65,10 @@ Peer::Peer(Peer&& src)
 }
 
 void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id) {
-    using namespace smolsocket;
-
     // Create connection
     try {
         log::log(log::Level::Debug, log::Subsystem::Peer, fmt::format("Peer::connect(): Trying {}", *this));
-        this->m_sock.emplace(Sock(m_ip, m_port, smolsocket::Proto::TCP, Timeout));
+        this->m_sock.emplace(smolsocket::Sock(m_ip, m_port, smolsocket::Proto::TCP, Timeout));
     } catch (const smolsocket::Exception& e) {
         auto msg = fmt::format("Conn::Conn(): Failed to connect: {}", e.what());
         log::log(log::Level::Warning, log::Subsystem::Peer, msg);
@@ -96,5 +95,31 @@ void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const 
     }
     log::log(log::Level::Debug, log::Subsystem::Peer,
              fmt::format("Peer::connect(): connection established to peer {}", *this));
+}
+
+void Peer::send_message(const peer::IMessage& msg) {
+    try {
+        log::log(log::Level::Debug, log::Subsystem::Peer,
+                 fmt::format("Peer::send_message(): Sending message {} to {}", *this, msg));
+        // Send message type
+        this->m_sock.value().send({static_cast<std::uint8_t>(msg.get_type())}, Timeout);
+        // Send message payload
+        this->m_sock.value().send(msg.serialize(), Timeout);
+    } catch (const smolsocket::Exception& e) {
+        auto msg = fmt::format("Peer::send_message(): Failed to send message: {}", e.what());
+        log::log(log::Level::Warning, log::Subsystem::Peer, msg);
+        throw Exception(msg);
+    }
+}
+
+void Peer::send_keepalive() {
+    try {
+        // keepalives are empty messages.
+        this->m_sock->send({}, Timeout);
+    } catch (const smolsocket::Exception& e) {
+        auto msg = fmt::format("Peer::send_keepalive(): Failed to send keepalive: {}", e.what());
+        log::log(log::Level::Warning, log::Subsystem::Peer, msg);
+        throw Exception(msg);
+    }
 }
 }  // namespace tt::peer

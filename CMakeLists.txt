@@ -15,6 +15,7 @@ list(
   "src/metainfo.cpp"
   "src/tracker.cpp"
   "src/peer.cpp"
+  "src/peer_message.cpp"
   "src/torrent.cpp"
   "src/smolsocket.cpp"
   "src/log.cpp")

@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "peer_message.hpp"
 #include "smolsocket.hpp"
 
 namespace tt::peer {
@@ -63,6 +64,13 @@ class Peer {
     Peer& operator=(Peer&&) = delete;
     // Establish a connection to this peer.
     void handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id);
+    // Send a message to this peer (after handshaking).
+    void send_message(const peer::IMessage& msg);
+    /*
+     * Send a keepalive to this peer (after handshaking).
+     * The protocol requires this to happen at least once every 2 minutes.
+     */
+    void send_keepalive();
 };
 }  // namespace tt::peer
 
