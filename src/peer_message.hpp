@@ -11,16 +11,15 @@ namespace tt::peer {
 
 // Messages that can be sent to a peer.
 enum class MessageType {
-    // The order is important here!
-    Choke,
-    Unchoke,
-    Interested,
-    NotInterested,
-    Have,
-    Bitfield,
-    Request,
-    Piece,
-    Cancel,
+    Choke = 0,
+    Unchoke = 1,
+    Interested = 2,
+    NotInterested = 3,
+    Have = 4,
+    Bitfield = 5,
+    Request = 6,
+    Piece = 7,
+    Cancel = 8,
 };
 
 // An interface for a BitTorrent protocol peer message.
@@ -50,6 +49,19 @@ class MessageInterested : public IMessage {
 };
 class MessageNotInterested : public IMessage {
    public:
+    MessageType get_type() const;
+    std::vector<std::uint8_t> serialize() const;
+};
+
+class MessageRequest : public IMessage {
+   private:
+    std::uint32_t m_piece_idx;
+    std::uint32_t m_begin_offset;
+    std::uint32_t m_length;
+
+   public:
+    MessageRequest(const std::uint32_t piece_idx, const std::uint32_t begin_offset, const std::uint32_t length);
+
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
 };

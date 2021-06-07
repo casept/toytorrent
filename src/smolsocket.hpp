@@ -11,8 +11,9 @@
 
 #pragma once
 
+#include <bits/stdint-uintn.h>
+
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <optional>
@@ -85,7 +86,9 @@ uint16_t ntoh(uint16_t x);
 uint16_t ntoh(std::array<char, 2> arr);
 // Convert from host to network endianness
 uint16_t hton(uint16_t x);
-
+uint32_t hton(uint32_t x);
+// Convert from integer type to byte array
+std::array<std::uint8_t, 4> int_to_arr(uint32_t x);
 }  // namespace util
 
 }  // namespace smolsocket

@@ -7,45 +7,27 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 include(ForbidInSource)
 include(SetBuildType)
 
-# Source files used both in the program and tests
-list(
-  APPEND
-  SHARED_FILES
-  "src/bencode.cpp"
-  "src/metainfo.cpp"
-  "src/tracker.cpp"
-  "src/peer.cpp"
-  "src/peer_message.cpp"
-  "src/torrent.cpp"
-  "src/smolsocket.cpp"
-  "src/log.cpp")
-# Source files only used in the main program, but not tests
-list(APPEND EXE_FILES "src/main.cpp")
-# Source files only used for tests
-list(
-  APPEND
-  TEST_SOURCE_FILES
-  "src/test/main.cpp"
-  "src/test/helpers.cpp"
-  "src/test/bencode.cpp"
-  "src/test/metainfo.cpp"
-  "src/test/tracker.cpp"
-  "src/test/peer.cpp")
-
 project(
   toytorrent
   VERSION 0.1
   DESCRIPTION "A toy torrent client"
   LANGUAGES CXX)
-add_executable(${PROJECT_NAME} ${EXE_FILES})
-add_library(lib${PROJECT_NAME} STATIC ${SHARED_FILES})
+add_executable(${PROJECT_NAME} "src/main.cpp")
+add_library(
+  lib${PROJECT_NAME} STATIC
+  "src/bencode.cpp"
+  "src/metainfo.cpp"
+  "src/tracker.cpp"
+  "src/peer.cpp"
+  "src/peer_message.cpp"
+  "src/piece.cpp"
+  "src/torrent.cpp"
+  "src/smolsocket.cpp"
+  "src/log.cpp")
 
 # We want ISO C++20
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
-target_compile_features(lib${PROJECT_NAME} PRIVATE cxx_std_20)
+target_compile_features(lib${PROJECT_NAME} PUBLIC cxx_std_20)
 
 # 3rd-party deps
 find_package(Botan2 2.0 REQUIRED)
@@ -109,8 +91,10 @@ if(BUILD_TESTING)
 
   enable_testing()
   include(GoogleTest)
-  add_executable(${PROJECT_NAME}_test ${TEST_SOURCE_FILES})
-
+  add_executable(
+    ${PROJECT_NAME}_test
+    "src/test/main.cpp" "src/test/helpers.cpp" "src/test/bencode.cpp"
+    "src/test/metainfo.cpp" "src/test/tracker.cpp" "src/test/peer.cpp")
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
   target_compile_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_COMPILE_OPTS})
   target_link_libraries(

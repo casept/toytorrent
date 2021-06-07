@@ -1,5 +1,7 @@
 #include "smolsocket.hpp"
 
+#include <cstdint>
+
 extern "C" {
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -177,6 +179,16 @@ uint16_t ntoh(std::array<char, 2> arr) {
     return ::ntohs(x);
 }
 uint16_t hton(uint16_t x) { return ::htons(x); }
+uint32_t hton(uint32_t x) { return ::htonl(x); }
+
+std::array<std::uint8_t, 4> int_to_arr(uint32_t x) {
+    const std::uint8_t byte_1 = static_cast<std::uint8_t>((x ^ 0xFF000000) >> 24);
+    const std::uint8_t byte_2 = static_cast<std::uint8_t>((x ^ 0x00FF0000) >> 16);
+    const std::uint8_t byte_3 = static_cast<std::uint8_t>((x ^ 0x0000FF00) >> 8);
+    const std::uint8_t byte_4 = static_cast<std::uint8_t>(x ^ 0x000000FF);
+    return {byte_1, byte_2, byte_3, byte_4};
+}
+
 }  // namespace util
 
 }  // namespace smolsocket
