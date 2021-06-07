@@ -10,18 +10,13 @@
 
 #include "log.hpp"
 #include "metainfo.hpp"
+#include "piece.hpp"
 #include "tracker.hpp"
 
 namespace tt {
-Piece::Piece(size_t size, std::array<char, Piece_SHA1_Len> expected_hash) {
-    // Each piece starts out as wanted
-    this->m_state = PieceState::Want;
-    this->m_size = size;
-    std::copy(expected_hash.begin(), expected_hash.end(), this->m_expected_hash.begin());
-}
-
 Torrent::Torrent(const MetaInfo &parsed_file)
     : m_metainfo(parsed_file),
+      m_piece_map({}),
       m_us_peer{peer::Peer(peer::ID(), "127.0.0.1", 1337)},
       m_tracker_req({
           tracker::RequestKind::STARTED,
@@ -34,11 +29,27 @@ Torrent::Torrent(const MetaInfo &parsed_file)
     // Our peer ID is already initialized above
 
     // Initialize pieces
-    this->m_pieces = {};
+    std::vector<piece::Piece> pieces{};
     for (const auto &expected_hash : parsed_file.m_pieces) {
         // TODO: Handle last piece being shorter
-        const Piece piece = Piece(parsed_file.m_piece_length, expected_hash);
-        this->m_pieces.push_back(piece);
+        pieces.push_back({static_cast<std::uint32_t>(parsed_file.m_piece_length), expected_hash});
+    }
+    this->m_piece_map = {pieces};
+}
+
+static void handshake(std::vector<peer::Peer> &peers, const peer::Peer &us_peer,
+                      const std::vector<std::uint8_t> &trunc_infohash_binary) {
+    for (peer::Peer &peer : peers) {
+        // Don't handshake with ourselves if the tracker returns us for whatever reason
+        if ((peer.m_id != us_peer.m_id) && (peer.m_ip != us_peer.m_ip) && (peer.m_port != us_peer.m_port)) {
+            try {
+                peer.handshake(trunc_infohash_binary, us_peer.m_id);
+            } catch (const peer::Exception &e) {
+                // TODO: Send into a retry queue and do exponential backoff or something
+                log::log(log::Level::Warning, log::Subsystem::Torrent,
+                         fmt::format("Torrent::handshake(): Peer failed: {}", e.what()));
+            }
+        }
     }
 }
 
@@ -48,18 +59,7 @@ void Torrent::download() {
         tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
     // Handshake with all peers that aren't we ourselves
     // TODO: Send keepalives to all peers periodically
-    for (peer::Peer &peer : initial_peers) {
-        if ((peer.m_id != this->m_us_peer.m_id) && (peer.m_ip != this->m_us_peer.m_ip) &&
-            (peer.m_port != this->m_us_peer.m_port)) {
-            try {
-                peer.handshake(this->m_metainfo.truncated_infohash_binary(), this->m_us_peer.m_id);
-            } catch (const peer::Exception &e) {
-                // TODO: Send into a retry queue and do exponential backoff or something
-                log::log(log::Level::Warning, log::Subsystem::Torrent,
-                         fmt::format("Torrent::download(): Peer failed: {}", e.what()));
-            }
-        }
-    }
+    handshake(initial_peers, this->m_us_peer, this->m_metainfo.truncated_infohash_binary());
     log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Tried all peers");
 
     // Tracker checkout

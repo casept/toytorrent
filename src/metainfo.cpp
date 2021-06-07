@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "bencode.hpp"
+#include "shared_constants.hpp"
 
 static std::ifstream read_torrent_file(const std::string_view& path) {
     std::ifstream f{std::string(path), std::ios::in | std::ios::binary};
@@ -78,6 +79,7 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     } else if (has_files) {
         m_download_type = DownloadType::Directory;
         // TODO:: Create file list
+        throw std::runtime_error{"Directory torrents not yet supported!"};
     } else {
         throw std::runtime_error{"Torrent metainfo file must contain 'length' or 'files' key"};
     }
@@ -86,14 +88,14 @@ MetaInfo::MetaInfo(std::deque<char> in) {
     m_pieces = {};
     // All the hashes are one long string rather than a list of smaller ones
     auto pieces = info_dict.find("pieces")->second.str.value();
-    if ((pieces.length() % Piece_SHA1_Len) != 0) {
+    if ((pieces.length() % piece::Piece_Hash_Len) != 0) {
         throw std::runtime_error{"Pieces list must only contain whole hashes"};
     }
-    int64_t num_pieces = pieces.length() / Piece_SHA1_Len;
+    int64_t num_pieces = pieces.length() / piece::Piece_Hash_Len;
     for (std::int64_t i = 0; i < num_pieces; i++) {
-        std::array<char, Piece_SHA1_Len> hash{};
-        std::copy_n(pieces.begin(), Piece_SHA1_Len, hash.begin());
-        pieces.erase(0, Piece_SHA1_Len);
+        std::array<std::uint8_t, piece::Piece_Hash_Len> hash{};
+        std::copy_n(pieces.begin(), piece::Piece_Hash_Len, hash.begin());
+        pieces.erase(0, piece::Piece_Hash_Len);
         m_pieces.push_back(hash);
     }
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <bits/c++config.h>
-
 #include <array>
 #include <cstdint>
 #include <deque>
@@ -9,14 +7,13 @@
 #include <string>
 #include <vector>
 
+#include "shared_constants.hpp"
+
 namespace tt {
 // TODO: Implement multifile torrents
 
 // What kind of download the metainfo describes.
 enum class DownloadType { SingleFile, Directory };
-
-// The length of a piece SHA1 hash in bytes
-constexpr size_t Piece_SHA1_Len = 20;
 
 class MetaInfo {
    private:
@@ -36,7 +33,7 @@ class MetaInfo {
     std::optional<std::int64_t> m_file_length;
     // Mapping of piece indices to their SHA1 hashes.
     // The piece index is the index into the vector.
-    std::vector<std::array<char, Piece_SHA1_Len>> m_pieces;
+    std::vector<std::array<std::uint8_t, piece::Piece_Hash_Len>> m_pieces;
 
     // Parses the data in the queue into a MetaInfo instance
     MetaInfo(std::deque<char> in);
