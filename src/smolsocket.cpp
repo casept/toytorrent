@@ -136,9 +136,27 @@ void Sock::send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> t
             disable_timeout(this->m_sockfd.value());
             throw Exception("smolsocket::Sock::send(): Failed to send(): ", {errno}, {});
         }
-        sent += (size_t)ret;
+        sent += static_cast<std::size_t>(ret);
     }
     disable_timeout(this->m_sockfd.value());
+}
+
+std::vector<std::uint8_t> Sock::recv(const std::size_t data_size, const std::optional<std::uint64_t> timeout_millis) {
+    std::vector<std::uint8_t> buf{};
+    buf.reserve(data_size);
+    enable_timeout(this->m_sockfd.value(), timeout_millis);
+    std::size_t recvd = 0;
+
+    while (recvd < data_size) {
+        const ssize_t ret = ::recv(this->m_sockfd.value(), buf.data() + recvd, data_size - recvd, 0);
+        if (ret == -1) {
+            disable_timeout(this->m_sockfd.value());
+            throw Exception("smolsocket::Sock::send(): Failed to send(): ", {errno}, {});
+        }
+        recvd += static_cast<std::size_t>(ret);
+    }
+    disable_timeout(this->m_sockfd.value());
+    return buf;
 }
 
 Sock::~Sock() {
