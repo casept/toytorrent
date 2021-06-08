@@ -66,6 +66,11 @@ class Sock {
      * If timeout is set, an exception will be raised if the transfer doesn't complete in time.
      */
     void send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> timeout_millis);
+    /*
+     * Receive the given amount of data, retrying until it gets through.
+     * If timeout is set, an exception will be raised if the transfer doesn't complete in time.
+     */
+    std::vector<std::uint8_t> recv(const std::size_t data_size, const std::optional<std::uint64_t> timeout_millis);
 
     ~Sock();
 };
