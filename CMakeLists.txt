@@ -22,6 +22,7 @@ add_library(
   "src/peer_message.cpp"
   "src/piece.cpp"
   "src/torrent.cpp"
+  "src/byteorder.cpp"
   "src/smolsocket.cpp"
   "src/log.cpp")
 

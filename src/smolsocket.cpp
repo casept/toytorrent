@@ -165,7 +165,6 @@ Sock::~Sock() {
     }
 }
 
-namespace util {
 std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const AddrKind kind) {
     std::array<char, std::max(V4_Len_Bytes, V6_Len_Bytes) + 1> buf;
     std::fill(buf.begin(), buf.end(), '\0');
@@ -189,24 +188,5 @@ std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const Addr
     }
     return std::string(buf.begin(), buf.end());
 }
-
-uint16_t ntoh(uint16_t x) { return ::ntohs(x); }
-uint16_t ntoh(std::array<char, 2> arr) {
-    uint16_t x = static_cast<uint16_t>(static_cast<unsigned char>(arr[0]));
-    x = x | (static_cast<uint16_t>(static_cast<unsigned char>(arr[1])) << 8);
-    return ::ntohs(x);
-}
-uint16_t hton(uint16_t x) { return ::htons(x); }
-uint32_t hton(uint32_t x) { return ::htonl(x); }
-
-std::array<std::uint8_t, 4> int_to_arr(uint32_t x) {
-    const std::uint8_t byte_1 = static_cast<std::uint8_t>((x ^ 0xFF000000) >> 24);
-    const std::uint8_t byte_2 = static_cast<std::uint8_t>((x ^ 0x00FF0000) >> 16);
-    const std::uint8_t byte_3 = static_cast<std::uint8_t>((x ^ 0x0000FF00) >> 8);
-    const std::uint8_t byte_4 = static_cast<std::uint8_t>(x ^ 0x000000FF);
-    return {byte_1, byte_2, byte_3, byte_4};
-}
-
-}  // namespace util
 
 }  // namespace smolsocket

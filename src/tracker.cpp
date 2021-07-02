@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "bencode.hpp"
+#include "byteorder.hpp"
 #include "log.hpp"
 #include "peer.hpp"
 
@@ -61,14 +62,14 @@ static std::vector<peer::Peer> bep52_peer_str_to_peers(const std::string_view& s
     }
     while (i < str.size()) {
         // Extract from string
-        std::array<uint8_t, smolsocket::util::V6_Len_Bytes> ip{};
+        std::array<uint8_t, smolsocket::V6_Len_Bytes> ip{};
         const std::string_view ip_substr = str.substr(i, 4);
         std::transform(ip_substr.begin(), ip_substr.end(), ip.begin(), [](char x) { return static_cast<uint8_t>(x); });
         std::array<char, 2> port;
         std::copy_n(str.substr(i + 4, 2).begin(), 2, port.begin());
         // Convert to usable repr
-        std::string ip_str = smolsocket::util::ip_to_str(ip, smolsocket::AddrKind::V4);
-        uint16_t port_native_endian = smolsocket::util::ntoh(port);
+        std::string ip_str = smolsocket::ip_to_str(ip, smolsocket::AddrKind::V4);
+        uint16_t port_native_endian = bo::ntoh(port);
         // Compact format has no ID, generate at random
         peers.emplace_back(peer::ID(), ip_str, port_native_endian);
         i += 6;

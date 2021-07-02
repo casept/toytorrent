@@ -75,8 +75,6 @@ class Sock {
     ~Sock();
 };
 
-// --- Wrappers for utility funcs
-namespace util {
 const size_t V4_Len_Bytes = 4;
 const size_t V6_Len_Bytes = 16;
 
@@ -85,15 +83,5 @@ const size_t V6_Len_Bytes = 16;
  * For IPv4, everything after first 4 bytes is ignored.
  */
 std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const AddrKind kind);
-
-// Convert from network to host endianness
-uint16_t ntoh(uint16_t x);
-uint16_t ntoh(std::array<char, 2> arr);
-// Convert from host to network endianness
-uint16_t hton(uint16_t x);
-uint32_t hton(uint32_t x);
-// Convert from integer type to byte array
-std::array<std::uint8_t, 4> int_to_arr(uint32_t x);
-}  // namespace util
 
 }  // namespace smolsocket
