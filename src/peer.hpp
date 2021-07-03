@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -71,6 +72,8 @@ class Peer {
      * The protocol requires this to happen at least once every 2 minutes.
      */
     void send_keepalive();
+    // Block until this peer has sent us a message.
+    std::unique_ptr<IMessage> wait_for_message();
 };
 }  // namespace tt::peer
 

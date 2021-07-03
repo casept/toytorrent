@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -121,5 +122,10 @@ void Peer::send_keepalive() {
         log::log(log::Level::Warning, log::Subsystem::Peer, msg);
         throw Exception(msg);
     }
+}
+
+std::unique_ptr<IMessage> Peer::wait_for_message() {
+    // FIXME: This timeout is wildly inappropriate. It should be decided by the caller.
+    return blocking_read_message_from_socket(this->m_sock.value(), {2000});
 }
 }  // namespace tt::peer

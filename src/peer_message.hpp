@@ -4,8 +4,11 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "smolsocket.hpp"
 
 namespace tt::peer {
 
@@ -25,32 +28,44 @@ enum class MessageType {
 // An interface for a BitTorrent protocol peer message.
 class IMessage {
    public:
-    virtual ~IMessage(){};
     // Get the type of message this is.
     virtual MessageType get_type() const = 0;
     // Convert the message into the form suitable for transmission over the wire.
     virtual std::vector<std::uint8_t> serialize() const = 0;
+    virtual ~IMessage(){};
 };
+
+/*
+ * Read and parse a message from the given socket.
+ * The reason why this has to be coupled to the socket is that various types of messages are dynamically-sized,
+ * and therefore have to be able to request more data on their own.
+ */
+std::unique_ptr<IMessage> blocking_read_message_from_socket(smolsocket::Sock& sock,
+                                                            std::optional<std::uint64_t> timeout_millis);
 
 class MessageChoke : public IMessage {
    public:
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
+    ~MessageChoke();
 };
 class MessageUnchoke : public IMessage {
    public:
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
+    ~MessageUnchoke();
 };
 class MessageInterested : public IMessage {
    public:
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
+    ~MessageInterested();
 };
 class MessageNotInterested : public IMessage {
    public:
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
+    ~MessageNotInterested();
 };
 
 class MessageRequest : public IMessage {
@@ -64,6 +79,22 @@ class MessageRequest : public IMessage {
 
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
+    ~MessageRequest();
+};
+
+class MessagePiece : public IMessage {
+   public:
+    std::uint32_t m_piece_idx;
+    std::uint32_t m_begin_offset;
+    std::uint32_t m_length;
+
+    MessagePiece(smolsocket::Sock& s);
+    MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset, const std::uint32_t length);
+
+    MessageType get_type() const;
+    std::vector<std::uint8_t> serialize() const;
+
+    ~MessagePiece();
 };
 
 }  // namespace tt::peer
