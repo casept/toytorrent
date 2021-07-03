@@ -1,5 +1,7 @@
 #include "helpers.hpp"
 
+#include <fmt/core.h>
+
 #include <boost/process.hpp>
 #include <chrono>
 #include <string>
@@ -39,3 +41,7 @@ TorrentSwarmTestCtx::~TorrentSwarmTestCtx() {
 TrackerTestCtx::TrackerTestCtx() : m_opentracker(bp::search_path("opentracker"), bp::args({"-p", "6969"})) {}
 
 TrackerTestCtx::~TrackerTestCtx() { this->m_opentracker.terminate(); }
+
+IntegrationTestCtx::IntegrationTestCtx(const std::string_view& torrent_file_path,
+                                       const std::string_view& torrent_data_dir_path)
+    : m_have_handshaked(false), m_tracker(TrackerTestCtx()), m_swarm({torrent_file_path, torrent_data_dir_path}) {}

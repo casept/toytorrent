@@ -22,3 +22,11 @@ class TrackerTestCtx {
     TrackerTestCtx();
     ~TrackerTestCtx();
 };
+
+class IntegrationTestCtx {
+   public:
+    bool m_have_handshaked;
+    TrackerTestCtx m_tracker;
+    TorrentSwarmTestCtx m_swarm;
+    IntegrationTestCtx(const std::string_view& torrent_file_path, const std::string_view& torrent_data_dir_path);
+};
