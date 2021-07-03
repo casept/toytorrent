@@ -1,9 +1,10 @@
 let
   sources = import ./nix/sources.nix;
   niv = import sources.niv { inherit sources; };
-  arion = import sources.arion { };
-  pkgs = import sources.nixpkgs { };
-in pkgs.mkShell {
+  arion = import sources.arion {};
+  pkgs = import sources.nixpkgs {};
+in
+pkgs.mkShell {
   CMAKE_INCLUDE_PATH = "${pkgs.curlFull.dev}/include";
   CMAKE_LIBRARY_PATH = "${pkgs.curlFull}/lib";
   CMAKE_PREFIX_PATH = "${pkgs.curlFull}";
@@ -26,14 +27,14 @@ in pkgs.mkShell {
     # Libraries
     pkgs.botan2
     pkgs.curlFull
-    (pkgs.callPackage ./nix/pkgs/cpr { })
+    (pkgs.callPackage ./nix/pkgs/cpr {})
     pkgs.fmt
 
     # For tests
     pkgs.gtest
     pkgs.aria2
     pkgs.opentracker
-    pkgs.boost
+    pkgs.boost175
 
     # Nix support
     pkgs.niv

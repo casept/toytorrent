@@ -1,4 +1,4 @@
-{ stdenv, cmake, pkg-config, gtest, cpr, curlFull, botan2, fmt }:
+{ stdenv, cmake, pkg-config, gtest, cpr, curlFull, botan2, fmt, boost175, opentracker, aria2 }:
 stdenv.mkDerivation {
   name = "toytorrent";
   src = ./.;
@@ -6,12 +6,9 @@ stdenv.mkDerivation {
   buildInputs = [
     cpr
     botan2
-    gtest
     fmt
-    boost
-  ]; # gtest so integration that integration tests can be run in arion-compose network
-  doCheck =
-    false; # Integration tests are run in the arion-compose network, not here
-  cmakeFlags = [ "-DBUILD_TESTING=ON" "-DINSTALL_TESTS=ON" ];
-  checkInputs = [ gtest ];
+  ];
+  doCheck = true;
+  cmakeFlags = [ "-DBUILD_TESTING=ON" ];
+  checkInputs = [ gtest boost175 opentracker aria2 ];
 }
