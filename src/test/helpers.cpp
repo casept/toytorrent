@@ -45,3 +45,9 @@ TrackerTestCtx::~TrackerTestCtx() { this->m_opentracker.terminate(); }
 IntegrationTestCtx::IntegrationTestCtx(const std::string_view& torrent_file_path,
                                        const std::string_view& torrent_data_dir_path)
     : m_have_handshaked(false), m_tracker(TrackerTestCtx()), m_swarm({torrent_file_path, torrent_data_dir_path}) {}
+
+void IntegrationTest::SetUpTestSuite() {
+    IntegrationTest::m_ctx = new IntegrationTestCtx(Torrent_File_Path, Torrent_Data_Dir);
+}
+
+void IntegrationTest::TearDownTestSuite() { delete m_ctx; }

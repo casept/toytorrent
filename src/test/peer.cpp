@@ -13,17 +13,7 @@
 
 using namespace tt;
 
-const auto Torrent_File_Path = "../testdata/zip_10MB.zip.torrent";
-const auto Torrent_Data_Dir = "../testdata";
-class Peer : public ::testing::Test {
-   public:
-    inline static IntegrationTestCtx* m_ctx;
-    static void SetUpTestSuite() { Peer::m_ctx = new IntegrationTestCtx(Torrent_File_Path, Torrent_Data_Dir); }
-
-    static void TearDownTestSuite() { delete m_ctx; }
-};
-
-TEST_F(Peer, handshake) {
+TEST_F(IntegrationTest, peer_handshake) {
     const auto info = metainfo_from_path(Torrent_File_Path);
     const std::uint16_t us_port = 12345;
     const auto us_peer = peer::Peer(peer::ID(), "127.0.0.1", us_port);
@@ -46,7 +36,7 @@ TEST_F(Peer, handshake) {
     }
 }
 
-TEST_F(Peer, request_piece) {
+TEST_F(IntegrationTest, peer_request_piece) {
     // Get peers
     const auto info = metainfo_from_path(Torrent_File_Path);
     const std::uint16_t us_port = 12345;

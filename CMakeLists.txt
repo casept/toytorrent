@@ -94,8 +94,13 @@ if(BUILD_TESTING)
   include(GoogleTest)
   add_executable(
     ${PROJECT_NAME}_test
-    "src/test/main.cpp" "src/test/helpers.cpp" "src/test/bencode.cpp"
-    "src/test/metainfo.cpp" "src/test/tracker.cpp" "src/test/peer.cpp")
+    "src/test/main.cpp"
+    "src/test/helpers.cpp"
+    "src/test/bencode.cpp"
+    "src/test/metainfo.cpp"
+    "src/test/tracker.cpp"
+    "src/test/peer.cpp"
+    "src/test/torrent.cpp")
   gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
   target_compile_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_COMPILE_OPTS})
   target_link_libraries(

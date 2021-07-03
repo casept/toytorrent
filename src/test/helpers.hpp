@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gtest/gtest.h>
+
 #include <boost/process.hpp>
 #include <cstdint>
 #include <string_view>
@@ -29,4 +31,14 @@ class IntegrationTestCtx {
     TrackerTestCtx m_tracker;
     TorrentSwarmTestCtx m_swarm;
     IntegrationTestCtx(const std::string_view& torrent_file_path, const std::string_view& torrent_data_dir_path);
+};
+
+const auto Torrent_File_Path = "../testdata/zip_10MB.zip.torrent";
+const auto Torrent_Data_Dir = "../testdata";
+
+class IntegrationTest : public ::testing::Test {
+   public:
+    inline static IntegrationTestCtx* m_ctx;
+    static void SetUpTestSuite();
+    static void TearDownTestSuite();
 };
