@@ -12,6 +12,7 @@
 
 #include "log.hpp"
 #include "peer_message.hpp"
+#include "shared_constants.hpp"
 #include "smolsocket.hpp"
 
 namespace tt::peer {
@@ -126,6 +127,6 @@ void Peer::send_keepalive() {
 
 std::unique_ptr<IMessage> Peer::wait_for_message() {
     // FIXME: This timeout is wildly inappropriate. It should be decided by the caller.
-    return blocking_read_message_from_socket(this->m_sock.value(), {2000});
+    return blocking_read_message_from_socket(this->m_sock.value(), {2000}, Request_Subpiece_Size);
 }
 }  // namespace tt::peer

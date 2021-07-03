@@ -103,8 +103,10 @@ TEST(Peer, request_piece) {
             const auto& response_piece = dynamic_cast<const tt::peer::MessagePiece&>((*response.release()));
             ASSERT_EQ(response_piece.m_piece_idx, piece_to_request);
             ASSERT_EQ(response_piece.m_begin_offset, offset_to_request);
-            ASSERT_EQ(response_piece.m_length, info.m_piece_length);
-            // TODO: Verify piece hash
+            ASSERT_EQ(response_piece.get_piece_data().size(), info.m_piece_length);
+
+            // Verify piece hash
+            const auto expected_hash = info.m_pieces.at(0);
         }
     }
 }

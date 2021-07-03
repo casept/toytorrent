@@ -41,7 +41,8 @@ class IMessage {
  * and therefore have to be able to request more data on their own.
  */
 std::unique_ptr<IMessage> blocking_read_message_from_socket(smolsocket::Sock& sock,
-                                                            std::optional<std::uint64_t> timeout_millis);
+                                                            std::optional<std::uint64_t> timeout_millis,
+                                                            std::size_t piece_size);
 
 class MessageChoke : public IMessage {
    public:
@@ -83,16 +84,20 @@ class MessageRequest : public IMessage {
 };
 
 class MessagePiece : public IMessage {
+   private:
+    std::vector<std::uint8_t> m_piece_data;
+
    public:
     std::uint32_t m_piece_idx;
     std::uint32_t m_begin_offset;
-    std::uint32_t m_length;
 
-    MessagePiece(smolsocket::Sock& s);
-    MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset, const std::uint32_t length);
+    MessagePiece(smolsocket::Sock& s, const std::size_t piece_len);
+    MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset,
+                 const std::vector<std::uint8_t>& piece_data);
 
     MessageType get_type() const;
     std::vector<std::uint8_t> serialize() const;
+    const std::vector<std::uint8_t>& get_piece_data() const;
 
     ~MessagePiece();
 };

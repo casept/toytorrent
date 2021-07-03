@@ -12,15 +12,21 @@
 
 namespace tt::peer {
 
+/*
+ FIXME: This shouldn't assume the length of the returned piece, because it breaks for the final piece.
+ An option would be introducing a proxy that intercepts requests and records their size,
+ though this would be ugly due to making a stateless module stateful.
+*/
 std::unique_ptr<IMessage> blocking_read_message_from_socket(smolsocket::Sock& sock,
-                                                            std::optional<std::uint64_t> timeout_millis) {
+                                                            std::optional<std::uint64_t> timeout_millis,
+                                                            std::size_t piece_size) {
     // Read the single byte specifying the message type.
     auto type_buf = sock.recv(1, timeout_millis);
     MessageType msg_type = MessageType(type_buf.at(0));
 
     switch (msg_type) {
         case MessageType::Piece:
-            return std::make_unique<MessagePiece>(MessagePiece(sock));
+            return std::make_unique<MessagePiece>(MessagePiece(sock, piece_size));
             break;
         default:
             log::log(log::Level::Fatal, log::Subsystem::Peer,
@@ -82,8 +88,8 @@ MessageRequest::~MessageRequest(){};
 
 /* MessagePiece */
 
-MessagePiece::MessagePiece(smolsocket::Sock& s) {
-    const auto data = s.recv(12, {2000});
+MessagePiece::MessagePiece(smolsocket::Sock& s, const std::size_t piece_len) : m_piece_data({}) {
+    const auto data = s.recv(4 + 4 + piece_len, {2000});
     std::array<std::uint8_t, 4> idx_arr{};
     std::copy_n(data.begin(), 4, idx_arr.begin());
     this->m_piece_idx = bo::ntoh(bo::arr_to_int(idx_arr));
@@ -92,19 +98,19 @@ MessagePiece::MessagePiece(smolsocket::Sock& s) {
     std::copy_n(data.begin() + 4, 4, begin_arr.begin());
     this->m_begin_offset = bo::ntoh(bo::arr_to_int(begin_arr));
 
-    std::array<std::uint8_t, 4> len_arr{};
-    std::copy_n(data.begin() + 8, 4, len_arr.begin());
-    this->m_length = bo::ntoh(bo::arr_to_int(len_arr));
+    this->m_piece_data.reserve(piece_len);
+    std::copy_n(data.begin() + 8, piece_len, this->m_piece_data.begin());
 }
 
-MessagePiece::MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset, const std::uint32_t length)
-    : m_piece_idx(piece_idx), m_begin_offset(begin_offset), m_length(length) {}
+MessagePiece::MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset,
+                           const std::vector<std::uint8_t>& piece_data)
+    : m_piece_idx(piece_idx), m_begin_offset(begin_offset), m_piece_data(piece_data) {}
 
 MessageType MessagePiece::get_type() const { return MessageType::Piece; }
 
 std::vector<std::uint8_t> MessagePiece::serialize() const {
     std::vector<std::uint8_t> serialized{};
-    serialized.reserve(12);
+    serialized.reserve(4 + 4 + this->m_piece_data.size());
     const auto idx_arr = bo::int_to_arr(bo::hton(this->m_piece_idx));
     for (const auto b : idx_arr) {
         serialized.push_back(b);
@@ -113,12 +119,13 @@ std::vector<std::uint8_t> MessagePiece::serialize() const {
     for (const auto b : begin_arr) {
         serialized.push_back(b);
     }
-    const auto len_arr = bo::int_to_arr(bo::hton(this->m_length));
-    for (const auto b : len_arr) {
-        serialized.push_back(b);
-    }
+    serialized.insert(serialized.begin(), this->m_piece_data.begin(), this->m_piece_data.end());
+
     return serialized;
 }
+
+const std::vector<std::uint8_t>& MessagePiece::get_piece_data() const { return this->m_piece_data; }
+
 MessagePiece::~MessagePiece(){};
 
 }  // namespace tt::peer
