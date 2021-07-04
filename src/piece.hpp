@@ -2,10 +2,9 @@
 
 #include <array>
 #include <cstdint>
-#include <functional>
 #include <iosfwd>
 #include <optional>
-#include <utility>
+#include <string>
 #include <vector>
 
 #include "shared_constants.hpp"
@@ -39,6 +38,8 @@ class Piece {
           const std::array<std::uint8_t, Piece_Hash_Len> expected_hash);
 
     std::array<std::uint8_t, Piece_Hash_Len> get_curr_hash();
+    std::string get_expected_hash_str();
+    std::string get_curr_hash_str();
     bool hashes_match();
 
     void flush_to_disk(std::fstream& f);

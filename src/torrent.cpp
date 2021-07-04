@@ -12,11 +12,13 @@
 #include <filesystem>
 #include <iostream>
 #include <istream>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <vector>
 
 #include "log.hpp"
 #include "metainfo.hpp"
@@ -41,12 +43,12 @@ static std::fstream file_open_or_create(const std::filesystem::path &path) {
                             "regular file or symlink)",
                             path.c_str()));
         }
-        f.open(path.c_str(), mode);
     } else {
         // Create if not exists
         mode = mode | std::ios::trunc;
     }
-    f.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    f.exceptions(std::fstream::failbit | std::fstream::badbit);
     try {
         f.open(path.c_str(), mode);
     } catch (std::system_error &e) {
@@ -111,14 +113,15 @@ void Torrent::download_prepare() {
     // Initial tracker checkin
     auto [initial_peers, initial_next_checkin] =
         tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
-
     // Handshake with all peers that aren't we ourselves
-    // TODO: Send keepalives to all peers periodically
     handshake(initial_peers, this->m_us_peer, this->m_metainfo.truncated_infohash_binary());
-    log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Tried all peers");
+    this->m_peers.insert(this->m_peers.end(), std::make_move_iterator(initial_peers.begin()),
+                         std::make_move_iterator(initial_peers.end()));
+    initial_peers.erase(initial_peers.begin(), initial_peers.end());
 }
 
 static void download_piece_from(piece::Piece &wanted, peer::Peer &p, std::fstream &f) {
+    // TODO: Send keepalives to all peers periodically
     // Request subpieces from peer sequentially until finished
     std::uint32_t subpiece_idx = 0;
     for (auto &subpiece : wanted.m_subpieces) {
@@ -141,7 +144,11 @@ static void download_piece_from(piece::Piece &wanted, peer::Peer &p, std::fstrea
     // Compare hashes
     if (!wanted.hashes_match()) {
         // TODO: We probably want to reset the piece and enqueue for redownload
-        log::log(log::Level::Fatal, log::Subsystem::Torrent, "Piece hash mismatch");
+        const std::string msg = fmt::format("Piece hash mismatch (expected {}, got {})", wanted.get_expected_hash_str(),
+                                            wanted.get_curr_hash_str());
+
+        log::log(log::Level::Fatal, log::Subsystem::Torrent, msg);
+        throw std::runtime_error(msg);
     }
 
     // Flush to disk

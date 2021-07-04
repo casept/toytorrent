@@ -40,6 +40,15 @@ std::array<std::uint8_t, Piece_Hash_Len> Piece::get_curr_hash() {
     return hash;
 }
 
+std::string Piece::get_expected_hash_str() {
+    return Botan::hex_encode(this->m_expected_hash.data(), this->m_expected_hash.size(), true);
+}
+
+std::string Piece::get_curr_hash_str() {
+    const auto hash = this->get_curr_hash();
+    return Botan::hex_encode(hash.data(), hash.size(), true);
+}
+
 bool Piece::hashes_match() {
     auto curr_hash{this->get_curr_hash()};
     return curr_hash == this->m_expected_hash;
