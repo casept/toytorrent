@@ -12,6 +12,7 @@ extern "C" {
 }
 
 #include <array>
+#include <algorithm>
 #include <cerrno>
 #include <chrono>
 #include <cstdlib>
@@ -186,7 +187,9 @@ std::string ip_to_str(const std::array<uint8_t, V6_Len_Bytes>& bytes, const Addr
             "smolsocket::util::ip_to_str(): Failed to convert numeric IP to string representation: inet_ntop failed: ",
             {errno}, {});
     }
-    return std::string(buf.begin(), buf.end());
+    auto as_str = std::string(buf.begin(), buf.end());
+    as_str.erase(std::find(as_str.begin(), as_str.end(), '\0'), as_str.end());
+    return as_str;
 }
 
 }  // namespace smolsocket

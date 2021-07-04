@@ -42,6 +42,7 @@ class Piece {
     std::string get_curr_hash_str();
     bool hashes_match();
 
+    void set_downloaded_subpiece_data(const std::size_t subpiece_idx, const std::vector<std::uint8_t> &data);
     void flush_to_disk(std::fstream& f);
 };
 

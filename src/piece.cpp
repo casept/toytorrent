@@ -3,6 +3,7 @@
 #include <botan-2/botan/hash.h>
 #include <botan-2/botan/hex.h>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <algorithm>
 #include <array>
@@ -14,11 +15,20 @@
 #include <vector>
 
 #include "shared_constants.hpp"
+#include "log.hpp"
 
 namespace tt::piece {
 Piece::Piece(const std::uint32_t size, const std::uint32_t idx,
              const std::array<std::uint8_t, Piece_Hash_Len> expected_hash)
-    : m_size(size), m_idx(idx), m_expected_hash(expected_hash) {}
+    : m_size(size), m_idx(idx), m_expected_hash(expected_hash), m_subpieces({}) {
+        auto num_subpieces = size/peer::Request_Subpiece_Size;
+        if (size%peer::Request_Subpiece_Size != 0) {
+            num_subpieces += 1;
+        }
+        this->m_subpieces.resize(num_subpieces);
+        const std::optional<std::vector<std::uint8_t>>& nothing = {};
+        std::fill(this->m_subpieces.begin(), this->m_subpieces.end(), nothing);
+    }
 
 std::array<std::uint8_t, Piece_Hash_Len> Piece::get_curr_hash() {
     // Iterate over subpieces and collect into vector
@@ -30,7 +40,6 @@ std::array<std::uint8_t, Piece_Hash_Len> Piece::get_curr_hash() {
             data.insert(data.end(), subpiece.begin(), subpiece.end());
         }
     }
-
     // Compute hash
     auto hasher = Botan::HashFunction::create_or_throw("SHA1");
     hasher->update(data);
@@ -52,6 +61,10 @@ std::string Piece::get_curr_hash_str() {
 bool Piece::hashes_match() {
     auto curr_hash{this->get_curr_hash()};
     return curr_hash == this->m_expected_hash;
+}
+
+void Piece::set_downloaded_subpiece_data(const std::size_t subpiece_idx, const std::vector<std::uint8_t>& data) {
+    this->m_subpieces.at(subpiece_idx) = {data};
 }
 
 void Piece::flush_to_disk(std::fstream& f) {

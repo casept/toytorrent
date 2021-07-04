@@ -62,7 +62,7 @@ class Peer {
     // The underlying socket should only ever be touched by one instance.
     Peer(const Peer&) = delete;
     Peer& operator=(const Peer&) = delete;
-    Peer& operator=(Peer&&);
+
     // Establish a connection to this peer.
     void handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id);
     // Send a message to this peer (after handshaking).

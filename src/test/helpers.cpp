@@ -29,7 +29,7 @@ TorrentSwarmTestCtx::TorrentSwarmTestCtx(const std::string_view& torrent_file_pa
     // Wait for peers to get up
     // FIXME: This should be dynamic
     using namespace std::chrono_literals;
-    std::this_thread::sleep_for(20s);
+    std::this_thread::sleep_for(5s);
 }
 
 TorrentSwarmTestCtx::~TorrentSwarmTestCtx() {

@@ -2,6 +2,7 @@
 
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <pstl/glue_algorithm_defs.h>
 
 #include <algorithm>
 #include <chrono>
@@ -96,8 +97,9 @@ Torrent::Torrent(const MetaInfo &parsed_file, const std::uint16_t our_port,
 static void handshake(std::vector<peer::Peer> &peers, const peer::Peer &us_peer,
                       const std::vector<std::uint8_t> &trunc_infohash_binary) {
     for (peer::Peer &peer : peers) {
+        fmt::print("Peer IP: {}, peer port: {}, our IP: {}, our port: {}\n", peer.m_ip, peer.m_port, us_peer.m_ip, us_peer.m_port);
         // Don't handshake with ourselves if the tracker returns us for whatever reason
-        if ((peer.m_id != us_peer.m_id) && (peer.m_ip != us_peer.m_ip) && (peer.m_port != us_peer.m_port)) {
+        if ((peer.m_ip != us_peer.m_ip) || (peer.m_port != us_peer.m_port)) {
             try {
                 peer.handshake(trunc_infohash_binary, us_peer.m_id);
             } catch (const peer::Exception &e) {
@@ -113,7 +115,14 @@ void Torrent::download_prepare() {
     // Initial tracker checkin
     auto [initial_peers, initial_next_checkin] =
         tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
-    // Handshake with all peers that aren't we ourselves
+    // Remove ourselves from peer list
+    for (std::size_t i = 0; i < initial_peers.size(); i++) {
+         if( initial_peers.at(i).m_ip == this->m_us_peer.m_ip && initial_peers.at(i).m_port == this->m_us_peer.m_port) {
+             initial_peers.erase(initial_peers.begin()+i);
+         }
+    }
+
+    // Handshake with all peers
     handshake(initial_peers, this->m_us_peer, this->m_metainfo.truncated_infohash_binary());
     this->m_peers.insert(this->m_peers.end(), std::make_move_iterator(initial_peers.begin()),
                          std::make_move_iterator(initial_peers.end()));
@@ -135,7 +144,9 @@ static void download_piece_from(piece::Piece &wanted, peer::Peer &p, std::fstrea
                          fmt::format("Torrent::download(): Expected message of type {}, got {}. Ignoring.",
                                      peer::MessageType::Piece, msg->get_type()));
             }
-            // TODO: Push contents into piece's subpiece
+            // Push contents into subpiece
+            const auto piece_msg = dynamic_cast<const peer::MessagePiece *>(msg.get());
+            wanted.set_downloaded_subpiece_data(static_cast<std::size_t>(subpiece_idx), piece_msg->get_piece_data());
         }
         subpiece_idx++;
     }
@@ -164,11 +175,9 @@ void Torrent::download_piece(const std::size_t piece_idx) {
     auto &single_peer = this->m_peers.at(0);
     // TODO: Probably need to unchoke peer
 
-    while (true) {
-        auto wanted = this->m_piece_map.get_piece(piece_idx);
-        download_piece_from(wanted, single_peer, this->m_file);
-    }
-    log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Download complete!");
+    auto wanted = this->m_piece_map.get_piece(piece_idx);
+    download_piece_from(wanted, single_peer, this->m_file);
+    log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download_piece(): Download complete!");
 
     // Tracker checkout
     this->m_tracker_req.kind = tracker::RequestKind::STOPPED;
