@@ -37,28 +37,44 @@ find_package(fmt REQUIRED)
 # System deps
 find_package(Threads REQUIRED QUIET)
 
-# Compile options for debugging
-list(
-  APPEND
-  DEBUG_COMPILE_OPTS
-  -Wall
-  -Wextra
-  -Wpedantic
-  -O0
-  -g
-  -fdiagnostics-color=always
-  -fsanitize=address
-  -fsanitize=undefined
-  -fno-omit-frame-pointer)
-list(APPEND DEBUG_LD_OPTS -fno-omit-frame-pointer -fsanitize=address
-     -fsanitize=undefined)
+if(CMAKE_BUILD_TYPE EQUAL "Debug")
+  list(APPEND SHARED_COMPILE_OPTS -O0 -g)
+endif()
+
+option(ENABLE_SANITIZERS "Enable address and UB sanitizers." FALSE)
+if(ENABLE_SANITIZERS)
+  list(APPEND SHARED_COMPILE_OPTS -fsanitize=address -fsanitize=undefined
+       -fno-omit-frame-pointer)
+  list(APPEND DEBUG_LD_OPTS -fno-omit-frame-pointer -fsanitize=address
+       -fsanitize=undefined)
+endif()
+
+option(FORCE_COLORED_OUTPUT
+       "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
+if(${FORCE_COLORED_OUTPUT})
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    list(APPEND SHARED_COMPILE_OPTS -fdiagnostics-color=always)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    list(APPEND SHARED_COMPILE_OPTS -fcolor-diagnostics)
+  endif()
+endif()
+
+option(ENABLE_WARNINGS "Enable strict compiler warnings (GNU/Clang only)."
+       FALSE)
+if(${ENABLE_WARNINGS})
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    list(APPEND SHARED_COMPILE_OPTS -Wall -Wextra -Wpedantic)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    list(APPEND SHARED_COMPILE_OPTS -Wall -Wextra -Wpedantic)
+  endif()
+endif()
 
 # Core library
-target_compile_options(lib${PROJECT_NAME} PRIVATE ${DEBUG_COMPILE_OPTS})
+target_compile_options(lib${PROJECT_NAME} PRIVATE ${SHARED_COMPILE_OPTS})
 target_link_libraries(lib${PROJECT_NAME} PRIVATE cpr Botan2::Botan2 fmt::fmt)
 
 # Executable
-target_compile_options(${PROJECT_NAME} PRIVATE ${DEBUG_COMPILE_OPTS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${SHARED_COMPILE_OPTS})
 target_link_options(${PROJECT_NAME} PRIVATE ${DEBUG_LD_OPTS})
 target_link_libraries(${PROJECT_NAME} PRIVATE lib${PROJECT_NAME})
 
@@ -82,38 +98,30 @@ if(BUILD_TESTING)
     Boost
     COMPONENTS system filesystem
     REQUIRED)
-  # Hack to force cmake to add system (libstdc++) header path to
-  # compile_commands.json. This also adds a lot of junk, but as long as it
-  # doesn't slow clangd too much I'll deal.
-  if(CMAKE_EXPORT_COMPILE_COMMANDS)
-    set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
-        ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-  endif()
-
-  enable_testing()
-  include(GoogleTest)
-  add_executable(
-    ${PROJECT_NAME}_test
-    "src/test/main.cpp"
-    "src/test/helpers.cpp"
-    "src/test/bencode.cpp"
-    "src/test/metainfo.cpp"
-    "src/test/tracker.cpp"
-    "src/test/peer.cpp"
-    "src/test/torrent.cpp")
-  gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
-  target_compile_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_COMPILE_OPTS})
-  target_link_libraries(
-    ${PROJECT_NAME}_test
-    PRIVATE lib${PROJECT_NAME} gtest Boost::headers Boost::system
-            Boost::filesystem Threads::Threads)
-  target_link_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_LD_OPTS})
-  # Useful to run tests in a different environment than the build (for example,
-  # outside the Nix build sandbox so we can talk to a real tracker)
-  if(INSTALL_TESTS)
-    install(
-      TARGETS ${PROJECT_NAME}_test
-      CONFIGURATIONS Release
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-  endif()
 endif()
+
+# Hack to force cmake to add system (libstdc++) header path to
+# compile_commands.json. This also adds a lot of junk, but as long as it doesn't
+# slow clangd too much I'll deal.
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
+
+enable_testing()
+include(GoogleTest)
+add_executable(
+  ${PROJECT_NAME}_test
+  "src/test/main.cpp"
+  "src/test/helpers.cpp"
+  "src/test/bencode.cpp"
+  "src/test/metainfo.cpp"
+  "src/test/tracker.cpp"
+  "src/test/peer.cpp"
+  "src/test/torrent.cpp")
+gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
+target_compile_options(${PROJECT_NAME}_test PRIVATE ${SHARED_COMPILE_OPTS})
+target_link_libraries(
+  ${PROJECT_NAME}_test PRIVATE lib${PROJECT_NAME} gtest Boost::headers
+                               Boost::system Boost::filesystem Threads::Threads)
+target_link_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_LD_OPTS})
