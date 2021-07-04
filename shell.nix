@@ -8,6 +8,7 @@ pkgs.mkShell {
   CMAKE_INCLUDE_PATH = "${pkgs.curlFull.dev}/include";
   CMAKE_LIBRARY_PATH = "${pkgs.curlFull}/lib";
   CMAKE_PREFIX_PATH = "${pkgs.curlFull}";
+  LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
   buildInputs = [
     # Dev tooling
     pkgs.clang_12
