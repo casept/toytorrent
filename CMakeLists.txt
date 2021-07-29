@@ -1,5 +1,5 @@
-# Semi-recent, I don't want to deal with outdated distro BS
-cmake_minimum_required(VERSION 3.15)
+# Earlier versions are not tested or supported
+cmake_minimum_required(VERSION 3.19)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
@@ -29,6 +29,32 @@ add_library(
 # We want ISO C++20
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 target_compile_features(lib${PROJECT_NAME} PUBLIC cxx_std_20)
+target_precompile_headers(
+  lib${PROJECT_NAME}
+  PRIVATE
+  <algorithm>
+  <array>
+  <cstdint>
+  <string>
+  <string_view>
+  <optional>
+  <functional>
+  <utility>
+  <vector>
+  <fstream>
+  <stdexcept>
+  <filesystem>
+  <iostream>
+  <istream>
+  <iterator>
+  <memory>
+  <tuple>
+  <fmt/core.h>
+  <fmt/format.h>
+  <botan-2/botan/auto_rng.h>
+  <botan-2/botan/hash.h>
+  <botan-2/botan/hex.h>)
+target_precompile_headers(${PROJECT_NAME} REUSE_FROM lib${PROJECT_NAME})
 
 # 3rd-party deps
 find_package(Botan2 2.0 REQUIRED)
@@ -92,6 +118,7 @@ install(
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Test setup
+option(BUILD_TESTING "Build test framework" FALSE)
 if(BUILD_TESTING)
   # The tests use boost
   find_package(
@@ -108,20 +135,32 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
       ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
 
-enable_testing()
-include(GoogleTest)
-add_executable(
-  ${PROJECT_NAME}_test
-  "src/test/main.cpp"
-  "src/test/helpers.cpp"
-  "src/test/bencode.cpp"
-  "src/test/metainfo.cpp"
-  "src/test/tracker.cpp"
-  "src/test/peer.cpp"
-  "src/test/torrent.cpp")
-gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
-target_compile_options(${PROJECT_NAME}_test PRIVATE ${SHARED_COMPILE_OPTS})
-target_link_libraries(
-  ${PROJECT_NAME}_test PRIVATE lib${PROJECT_NAME} gtest Boost::headers
-                               Boost::system Boost::filesystem Threads::Threads)
-target_link_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_LD_OPTS})
+if(BUILD_TESTING)
+  enable_testing()
+  include(GoogleTest)
+  add_executable(
+    ${PROJECT_NAME}_test
+    "src/test/main.cpp"
+    "src/test/helpers.cpp"
+    "src/test/bencode.cpp"
+    "src/test/metainfo.cpp"
+    "src/test/tracker.cpp"
+    "src/test/peer.cpp"
+    "src/test/torrent.cpp")
+  gtest_discover_tests(${PROJECT_NAME}_test "" AUTO)
+  target_compile_options(${PROJECT_NAME}_test PRIVATE ${SHARED_COMPILE_OPTS})
+  target_link_libraries(
+    ${PROJECT_NAME}_test
+    PRIVATE lib${PROJECT_NAME} gtest Boost::headers Boost::system
+            Boost::filesystem Threads::Threads)
+  target_link_options(${PROJECT_NAME}_test PRIVATE ${DEBUG_LD_OPTS})
+  target_precompile_headers(
+    ${PROJECT_NAME}_test
+    PRIVATE
+    <chrono>
+    <string>
+    <string_view>
+    <vector>
+    <gtest/gtest.h>
+    <fmt/core.h>)
+endif()
