@@ -35,6 +35,7 @@ target_precompile_headers(
   <algorithm>
   <array>
   <cstdint>
+  <deque>
   <string>
   <string_view>
   <optional>
@@ -49,6 +50,7 @@ target_precompile_headers(
   <iterator>
   <memory>
   <tuple>
+  <cpr/cpr.h>
   <fmt/core.h>
   <fmt/format.h>
   <botan-2/botan/auto_rng.h>
@@ -157,10 +159,12 @@ if(BUILD_TESTING)
   target_precompile_headers(
     ${PROJECT_NAME}_test
     PRIVATE
+    <cstdint>
     <chrono>
     <string>
     <string_view>
     <vector>
+    <boost/process.hpp>
     <gtest/gtest.h>
     <fmt/core.h>)
 endif()

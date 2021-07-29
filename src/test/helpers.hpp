@@ -13,6 +13,8 @@ class TorrentSwarmTestCtx {
     std::vector<boost::process::child> m_aria2c_peers;
     std::vector<std::uint16_t> m_aria2c_peer_ports;
 
+    TorrentSwarmTestCtx() = delete;
+    TorrentSwarmTestCtx(TorrentSwarmTestCtx&) = delete;
     TorrentSwarmTestCtx(const std::string_view& torrent_file_path, const std::string_view& torrent_data_dir_path);
     ~TorrentSwarmTestCtx();
 };

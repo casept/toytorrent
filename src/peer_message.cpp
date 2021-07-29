@@ -104,7 +104,7 @@ MessagePiece::MessagePiece(smolsocket::Sock& s, const std::size_t piece_len) : m
 
 MessagePiece::MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset,
                            const std::vector<std::uint8_t>& piece_data)
-    : m_piece_idx(piece_idx), m_begin_offset(begin_offset), m_piece_data(piece_data) {}
+    : m_piece_data(piece_data), m_piece_idx(piece_idx), m_begin_offset(begin_offset) {}
 
 MessageType MessagePiece::get_type() const { return MessageType::Piece; }
 
