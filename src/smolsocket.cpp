@@ -128,6 +128,21 @@ Sock::Sock(Sock&& src) : m_sockfd(src.m_sockfd), m_addr_kind(src.m_addr_kind), m
     src.m_sockfd = -1;
 }
 
+Sock& Sock::operator=(Sock&& other) {
+    if (this != &other) {
+        // Give resources to new instance
+        this->m_sockfd = other.m_sockfd;
+        this->m_proto = other.m_proto;
+        this->m_addr_kind = other.m_addr_kind;
+
+        // Take resources away from old instance
+        other.m_sockfd = {};
+
+        return *this;
+    }
+    return other;
+}
+
 void Sock::send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> timeout_millis) {
     enable_timeout(this->m_sockfd.value(), timeout_millis);
     size_t sent = 0;

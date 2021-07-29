@@ -41,16 +41,16 @@ std::unique_ptr<IMessage> blocking_read_message_from_socket(smolsocket::Sock& so
 /* Implement the message types which carry no payload */
 MessageType MessageChoke::get_type() const { return MessageType::Choke; }
 std::vector<std::uint8_t> MessageChoke::serialize() const { return {}; }
-MessageChoke::~MessageChoke(){};
+MessageChoke::~MessageChoke() {}
 MessageType MessageUnchoke::get_type() const { return MessageType::Unchoke; }
 std::vector<std::uint8_t> MessageUnchoke::serialize() const { return {}; }
-MessageUnchoke::~MessageUnchoke(){};
+MessageUnchoke::~MessageUnchoke() {}
 MessageType MessageInterested::get_type() const { return MessageType::Interested; }
 std::vector<std::uint8_t> MessageInterested::serialize() const { return {}; }
-MessageInterested::~MessageInterested(){};
+MessageInterested::~MessageInterested() {}
 MessageType MessageNotInterested::get_type() const { return MessageType::NotInterested; }
 std::vector<std::uint8_t> MessageNotInterested::serialize() const { return {}; }
-MessageNotInterested::~MessageNotInterested(){};
+MessageNotInterested::~MessageNotInterested() {}
 
 /* And the ones that do */
 
@@ -84,7 +84,7 @@ std::vector<std::uint8_t> MessageRequest::serialize() const {
     return serialized;
 }
 
-MessageRequest::~MessageRequest(){};
+MessageRequest::~MessageRequest() {}
 
 /* MessagePiece */
 
@@ -126,6 +126,6 @@ std::vector<std::uint8_t> MessagePiece::serialize() const {
 
 const std::vector<std::uint8_t>& MessagePiece::get_piece_data() const { return this->m_piece_data; }
 
-MessagePiece::~MessagePiece(){};
+MessagePiece::~MessagePiece() {}
 
 }  // namespace tt::peer

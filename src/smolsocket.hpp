@@ -60,7 +60,7 @@ class Sock {
     // Copying is banned, as there should only be a single object managing the socket.
     Sock(const Sock&) = delete;
     Sock& operator=(const Sock&) = delete;
-    Sock& operator=(Sock&&) = delete;
+    Sock& operator=(Sock&&);
     /*
      * Send the given data, retrying until it gets through.
      * If timeout is set, an exception will be raised if the transfer doesn't complete in time.

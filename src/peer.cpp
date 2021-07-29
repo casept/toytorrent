@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "log.hpp"
@@ -49,10 +50,10 @@ std::vector<std::uint8_t> ID::as_byte_vec() const {
     result.resize(this->m_id.size());
     std::transform(this->m_id.begin(), this->m_id.end(), result.begin(), char_to_bytes);
     return result;
-};
+}
 
 Peer::Peer(const ID& id, const std::string_view& ip, const std::uint16_t port)
-    : m_sock({}), m_ip(ip), m_port(port), m_id(id){};
+    : m_sock({}), m_ip(ip), m_port(port), m_id(id) {}
 
 Peer::Peer(Peer&& src)
     : m_sock(std::move(src.m_sock)),
@@ -64,6 +65,20 @@ Peer::Peer(Peer&& src)
     // FIXME: We should invalidate the old one's socket,
     // but initialization in this language is so fucked that after 2 hours of trying I can't figure out how to
     // re-initialize a class field without having to copy-construct.
+}
+
+Peer& Peer::operator=(Peer&& other) {
+    if (this != &other) {
+        // Take other's resources
+        std::swap(this->m_sock, other.m_sock);
+        this->m_we_choked = other.m_we_choked;
+        this->m_we_interested = other.m_we_interested;
+        this->m_ip = std::move(other.m_ip);
+        this->m_port = other.m_port;
+        this->m_id = std::move(other.m_id);
+        return *this;
+    }
+    return other;
 }
 
 void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id) {
