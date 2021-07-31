@@ -1,4 +1,4 @@
-#include "../bencode.hpp"
+#include "../torrent/bencode.hpp"
 
 #include <gtest/gtest.h>
 

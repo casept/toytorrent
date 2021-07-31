@@ -1,4 +1,4 @@
-#include "../peer.hpp"
+#include "../torrent/peer.hpp"
 
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-internal.h>
@@ -7,8 +7,8 @@
 #include <memory>
 #include <tuple>
 
-#include "../metainfo.hpp"
-#include "../tracker.hpp"
+#include "../torrent/metainfo.hpp"
+#include "../torrent/tracker.hpp"
 #include "helpers.hpp"
 
 using namespace tt;

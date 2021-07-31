@@ -9,8 +9,8 @@
 #include <string_view>
 #include <vector>
 
+#include "../reusable/smolsocket.hpp"
 #include "peer_message.hpp"
-#include "smolsocket.hpp"
 
 namespace tt::peer {
 // Thrown on peer-related failures.

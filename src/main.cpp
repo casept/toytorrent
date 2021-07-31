@@ -2,9 +2,9 @@
 
 #include <cstdlib>
 
-#include "metainfo.hpp"
-#include "torrent.hpp"
-#include "tracker.hpp"
+#include "torrent/metainfo.hpp"
+#include "torrent/torrent.hpp"
+#include "torrent/tracker.hpp"
 
 int main(int argc, char** argv) {
     if (argc != 2) {

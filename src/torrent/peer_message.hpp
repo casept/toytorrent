@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "smolsocket.hpp"
+#include "../reusable/smolsocket.hpp"
 
 namespace tt::peer {
 

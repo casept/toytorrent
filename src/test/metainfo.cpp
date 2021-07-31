@@ -1,4 +1,4 @@
-#include "../metainfo.hpp"
+#include "../torrent/metainfo.hpp"
 
 #include <errno.h>
 #include <gtest/gtest.h>

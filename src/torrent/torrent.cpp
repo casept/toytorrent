@@ -21,7 +21,7 @@
 #include <thread>
 #include <vector>
 
-#include "log.hpp"
+#include "../log.hpp"
 #include "metainfo.hpp"
 #include "peer.hpp"
 #include "peer_message.hpp"
@@ -97,7 +97,8 @@ Torrent::Torrent(const MetaInfo &parsed_file, const std::uint16_t our_port,
 static void handshake(std::vector<peer::Peer> &peers, const peer::Peer &us_peer,
                       const std::vector<std::uint8_t> &trunc_infohash_binary) {
     for (peer::Peer &peer : peers) {
-        fmt::print("Peer IP: {}, peer port: {}, our IP: {}, our port: {}\n", peer.m_ip, peer.m_port, us_peer.m_ip, us_peer.m_port);
+        fmt::print("Peer IP: {}, peer port: {}, our IP: {}, our port: {}\n", peer.m_ip, peer.m_port, us_peer.m_ip,
+                   us_peer.m_port);
         // Don't handshake with ourselves if the tracker returns us for whatever reason
         if ((peer.m_ip != us_peer.m_ip) || (peer.m_port != us_peer.m_port)) {
             try {
@@ -117,9 +118,9 @@ void Torrent::download_prepare() {
         tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
     // Remove ourselves from peer list
     for (std::size_t i = 0; i < initial_peers.size(); i++) {
-         if( initial_peers.at(i).m_ip == this->m_us_peer.m_ip && initial_peers.at(i).m_port == this->m_us_peer.m_port) {
-             initial_peers.erase(initial_peers.begin()+i);
-         }
+        if (initial_peers.at(i).m_ip == this->m_us_peer.m_ip && initial_peers.at(i).m_port == this->m_us_peer.m_port) {
+            initial_peers.erase(initial_peers.begin() + i);
+        }
     }
 
     // Handshake with all peers
@@ -172,6 +173,13 @@ void Torrent::download_piece(const std::size_t piece_idx) {
 
     // For now, perform a very stupid strategy of downloading sequentially from a single peer.
     // TODO: Do load balancing and all that
+    while (this->m_peers.size() < 1) {
+        log::log(log::Level::Warning, log::Subsystem::Torrent,
+                 "Torrent::download_piece(): Do not have any peers in swarm, waiting!");
+        std::this_thread::sleep_for(std::chrono::seconds{1});
+        this->m_tracker_req.kind = tracker::RequestKind::UPDATE;
+    }
+
     auto &single_peer = this->m_peers.at(0);
     // TODO: Probably need to unchoke peer
 

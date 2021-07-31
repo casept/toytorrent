@@ -6,9 +6,9 @@
 #include <memory>
 #include <vector>
 
-#include "byteorder.hpp"
-#include "log.hpp"
-#include "smolsocket.hpp"
+#include "../log.hpp"
+#include "../reusable/byteorder.hpp"
+#include "../reusable/smolsocket.hpp"
 
 namespace tt::peer {
 

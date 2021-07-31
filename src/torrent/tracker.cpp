@@ -10,10 +10,10 @@
 #include <string_view>
 #include <vector>
 
-#include "bencode.hpp"
-#include "byteorder.hpp"
-#include "log.hpp"
-#include "peer.hpp"
+#include "../log.hpp"
+#include "../reusable/byteorder.hpp"
+#include "../torrent/bencode.hpp"
+#include "../torrent/peer.hpp"
 
 namespace tt::tracker {
 Exception::Exception(const std::string_view& msg) : m_msg(msg) {}

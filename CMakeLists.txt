@@ -15,17 +15,19 @@ project(
 add_executable(${PROJECT_NAME} "src/main.cpp")
 add_library(
   lib${PROJECT_NAME} STATIC
-  "src/bencode.cpp"
-  "src/metainfo.cpp"
-  "src/tracker.cpp"
-  "src/peer.cpp"
-  "src/peer_message.cpp"
-  "src/piece.cpp"
-  "src/torrent.cpp"
-  "src/byteorder.cpp"
-  "src/smolsocket.cpp"
+  # Core torrent protocol types
+  "src/torrent/bencode.cpp"
+  "src/torrent/metainfo.cpp"
+  "src/torrent/tracker.cpp"
+  "src/torrent/peer.cpp"
+  "src/torrent/peer_message.cpp"
+  "src/torrent/piece.cpp"
+  "src/torrent/torrent.cpp"
+  # (Potentially) project-independent utilities
+  "src/reusable/byteorder.cpp"
+  "src/reusable/smolsocket.cpp"
+  # Other
   "src/log.cpp")
-
 # We want ISO C++20
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 target_compile_features(lib${PROJECT_NAME} PUBLIC cxx_std_20)

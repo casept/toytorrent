@@ -11,10 +11,10 @@
 #include <utility>
 #include <vector>
 
-#include "log.hpp"
+#include "../log.hpp"
+#include "../reusable/smolsocket.hpp"
 #include "peer_message.hpp"
 #include "shared_constants.hpp"
-#include "smolsocket.hpp"
 
 namespace tt::peer {
 

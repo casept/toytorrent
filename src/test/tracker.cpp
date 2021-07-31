@@ -1,8 +1,8 @@
-#include "../tracker.hpp"
+#include "../torrent/tracker.hpp"
 
 #include <gtest/gtest.h>
 
-#include "../metainfo.hpp"
+#include "../torrent/metainfo.hpp"
 #include "helpers.hpp"
 
 using namespace tt;
