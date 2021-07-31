@@ -18,7 +18,7 @@ class Exception : public std::exception {
    public:
     std::string m_msg{};
     Exception(const std::string_view&);
-    [[nodiscard]] const char* what() const noexcept;
+    [[nodiscard]] const char* what() const noexcept override;
 };
 
 const std::size_t ID_Length = 20;
@@ -33,8 +33,8 @@ class ID {
     // Generate a new ID based on given string.
     ID(const std::string_view& str);
     // Equal if the internal ID field is the same.
-    inline bool operator==(const ID& rhs) { return this->m_id == rhs.m_id; };
-    inline bool operator!=(const ID& rhs) { return this->m_id != rhs.m_id; };
+    inline bool operator==(const ID& rhs) { return this->m_id == rhs.m_id; }
+    inline bool operator!=(const ID& rhs) { return this->m_id != rhs.m_id; }
     // Get string representation.
     std::string as_string() const;
     // Get byte representation.

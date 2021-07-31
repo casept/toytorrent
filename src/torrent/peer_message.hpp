@@ -32,7 +32,7 @@ class IMessage {
     virtual MessageType get_type() const = 0;
     // Convert the message into the form suitable for transmission over the wire.
     virtual std::vector<std::uint8_t> serialize() const = 0;
-    virtual ~IMessage(){};
+    virtual ~IMessage() {}
 };
 
 /*
@@ -46,27 +46,27 @@ std::unique_ptr<IMessage> blocking_read_message_from_socket(smolsocket::Sock& so
 
 class MessageChoke : public IMessage {
    public:
-    MessageType get_type() const;
-    std::vector<std::uint8_t> serialize() const;
-    ~MessageChoke();
+    MessageType get_type() const override;
+    std::vector<std::uint8_t> serialize() const override;
+    ~MessageChoke() override;
 };
 class MessageUnchoke : public IMessage {
    public:
-    MessageType get_type() const;
-    std::vector<std::uint8_t> serialize() const;
-    ~MessageUnchoke();
+    MessageType get_type() const override;
+    std::vector<std::uint8_t> serialize() const override;
+    ~MessageUnchoke() override;
 };
 class MessageInterested : public IMessage {
    public:
-    MessageType get_type() const;
-    std::vector<std::uint8_t> serialize() const;
-    ~MessageInterested();
+    MessageType get_type() const override;
+    std::vector<std::uint8_t> serialize() const override;
+    ~MessageInterested() override;
 };
 class MessageNotInterested : public IMessage {
    public:
-    MessageType get_type() const;
-    std::vector<std::uint8_t> serialize() const;
-    ~MessageNotInterested();
+    MessageType get_type() const override;
+    std::vector<std::uint8_t> serialize() const override;
+    ~MessageNotInterested() override;
 };
 
 class MessageRequest : public IMessage {
@@ -78,9 +78,9 @@ class MessageRequest : public IMessage {
    public:
     MessageRequest(const std::uint32_t piece_idx, const std::uint32_t begin_offset, const std::uint32_t length);
 
-    MessageType get_type() const;
-    std::vector<std::uint8_t> serialize() const;
-    ~MessageRequest();
+    MessageType get_type() const override;
+    std::vector<std::uint8_t> serialize() const override;
+    ~MessageRequest() override;
 };
 
 class MessagePiece : public IMessage {
@@ -94,12 +94,13 @@ class MessagePiece : public IMessage {
     MessagePiece(smolsocket::Sock& s, const std::size_t piece_len);
     MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset,
                  const std::vector<std::uint8_t>& piece_data);
+    MessagePiece(const MessagePiece&);
 
-    MessageType get_type() const;
-    std::vector<std::uint8_t> serialize() const;
+    MessageType get_type() const override;
+    std::vector<std::uint8_t> serialize() const override;
     const std::vector<std::uint8_t>& get_piece_data() const;
 
-    ~MessagePiece();
+    ~MessagePiece() override;
 };
 
 }  // namespace tt::peer

@@ -15,7 +15,7 @@ class Exception : public std::exception {
    public:
     std::string m_msg{};
     Exception(const std::string_view&);
-    const char* what() const throw();
+    const char* what() const noexcept override;
 };
 
 // Statistics the tracker collects from us

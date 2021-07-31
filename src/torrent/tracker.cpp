@@ -18,7 +18,7 @@
 namespace tt::tracker {
 Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
 
-const char* Exception::what() const throw() { return this->m_msg.c_str(); }
+const char* Exception::what() const noexcept { return this->m_msg.c_str(); }
 
 static bencode::Object get_object_from_dict_or_throw(std::string key, std::map<std::string, bencode::Object> dict,
                                                      std::string throw_msg) {
@@ -46,7 +46,7 @@ static std::vector<peer::Peer> bencode_peer_list_to_peers(std::vector<bencode::O
         const std::string_view peer_ip_view = std::string_view(peer_ip_obj.str.value());
         auto peer_port_obj =
             get_object_from_dict_or_throw("port", peer_dict, "Tracker violated protocol: all peers must have port");
-        const std::uint16_t peer_port = static_cast<std::int64_t>(peer_port_obj.integer.value());
+        const std::uint16_t peer_port = static_cast<std::uint16_t>(peer_port_obj.integer.value());
         const peer::ID peer_id{peer_id_obj.str.value()};
         peers.emplace_back(peer_id, peer_ip_view, peer_port);
     }

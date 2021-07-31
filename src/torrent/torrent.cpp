@@ -53,9 +53,9 @@ static std::fstream file_open_or_create(const std::filesystem::path &path) {
     try {
         f.open(path.c_str(), mode);
     } catch (std::system_error &e) {
-        throw std::runtime_error(
-            fmt::format("Torrent::file_open_or_create(): Failed to open destination file {} (Reason: {})", path.c_str(),
-                        strerror(errno)));
+        throw std::runtime_error(fmt::format(
+            "Torrent::file_open_or_create(): Failed to open destination file {} (Reason: {}), original exception: {}",
+            path.c_str(), strerror(errno), e.what()));
     }
     return f;
 }

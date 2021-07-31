@@ -33,7 +33,7 @@ class Exception : public std::exception {
    public:
     std::string m_msg{};
     Exception(const std::string_view& msg, const std::optional<int> errno_val, const std::optional<int> gai_err);
-    const char* what() const noexcept;
+    const char* what() const noexcept override;
 };
 
 // A socket.

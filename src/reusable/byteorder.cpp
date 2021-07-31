@@ -10,7 +10,7 @@ namespace bo {
 std::uint16_t ntoh(std::uint16_t x) { return ::ntohs(x); }
 std::uint16_t ntoh(std::array<char, 2> arr) {
     std::uint16_t x = static_cast<std::uint16_t>(static_cast<unsigned char>(arr[0]));
-    x = x | (static_cast<uint16_t>(static_cast<unsigned char>(arr[1])) << 8);
+    x |= (static_cast<uint16_t>(static_cast<unsigned char>(arr[1])) << 8);
     return ::ntohs(x);
 }
 std::uint16_t hton(std::uint16_t x) { return ::htons(x); }

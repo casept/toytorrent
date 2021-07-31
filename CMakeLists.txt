@@ -95,7 +95,24 @@ if(${ENABLE_WARNINGS})
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     list(APPEND SHARED_COMPILE_OPTS -Wall -Wextra -Wpedantic)
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    list(APPEND SHARED_COMPILE_OPTS -Wall -Wextra -Wpedantic)
+    list(
+      APPEND
+      SHARED_COMPILE_OPTS
+      -Wall
+      -Wextra
+      -Wpedantic
+      -Weverything
+      -Wno-c++98-compat-pedantic
+      -Wno-c++98-compat
+      -Wno-padded
+      -Wno-covered-switch-default
+      -Wno-newline-eof
+      -Wno-missing-prototypes
+      -Wno-weak-vtables
+      -Wno-exit-time-destructors
+      -Wno-unreachable-code-break
+      # Triggered by gtest macro
+      -Wno-global-constructors)
   endif()
 endif()
 

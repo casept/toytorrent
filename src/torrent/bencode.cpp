@@ -19,7 +19,7 @@
 namespace tt::bencode {
 Exception::Exception(const std::string_view &msg) : m_msg(msg) {}
 
-const char *Exception::what() const throw() { return this->m_msg.c_str(); }
+const char *Exception::what() const noexcept { return this->m_msg.c_str(); }
 
 // Takes a bencoded string out of the stream.
 std::string take_string(std::deque<char> &in) {
@@ -195,6 +195,6 @@ std::optional<Object> Parser::next() {
         return {};
     } else {
         return {Object(m_data)};
-    };
+    }
 }
 }  // namespace tt::bencode

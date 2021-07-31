@@ -24,7 +24,7 @@ const std::optional<std::uint64_t> Timeout{2000};
 
 Exception::Exception(const std::string_view& msg) : m_msg(msg) {}
 
-const char* Exception::what() const throw() { return this->m_msg.c_str(); }
+const char* Exception::what() const noexcept { return this->m_msg.c_str(); }
 
 ID::ID() {
     // Generate 20 random printable ASCII chars
@@ -34,7 +34,7 @@ ID::ID() {
     while (this->m_id.size() < ID_Length) {
         const uint8_t byte = rng.next_nonzero_byte();
         if (byte >= 33 && byte <= 126) {
-            this->m_id.push_back((char)byte);
+            this->m_id.push_back(static_cast<char>(byte));
         }
     }
 }
@@ -123,9 +123,9 @@ void Peer::send_message(const peer::IMessage& msg) {
         // Send message payload
         this->m_sock.value().send(msg.serialize(), Timeout);
     } catch (const smolsocket::Exception& e) {
-        auto msg = fmt::format("Peer::send_message(): Failed to send message: {}", e.what());
-        log::log(log::Level::Warning, log::Subsystem::Peer, msg);
-        throw Exception(msg);
+        auto except_msg = fmt::format("Peer::send_message(): Failed to send message: {}", e.what());
+        log::log(log::Level::Warning, log::Subsystem::Peer, except_msg);
+        throw Exception(except_msg);
     }
 }
 

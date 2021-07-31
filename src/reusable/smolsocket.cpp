@@ -11,8 +11,8 @@ extern "C" {
 #include <unistd.h>
 }
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <chrono>
 #include <cstdlib>
@@ -147,7 +147,7 @@ void Sock::send(const std::vector<uint8_t>& data, std::optional<std::uint64_t> t
     enable_timeout(this->m_sockfd.value(), timeout_millis);
     size_t sent = 0;
     while (sent < data.size()) {
-        const int ret = ::send(this->m_sockfd.value(), data.data() + sent, data.size() - sent, 0);
+        const ssize_t ret = ::send(this->m_sockfd.value(), data.data() + sent, data.size() - sent, 0);
         if (ret == -1) {
             disable_timeout(this->m_sockfd.value());
             throw Exception("smolsocket::Sock::send(): Failed to send(): ", {errno}, {});
