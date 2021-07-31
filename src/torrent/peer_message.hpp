@@ -94,7 +94,7 @@ class MessagePiece : public IMessage {
     MessagePiece(smolsocket::Sock& s, const std::size_t piece_len);
     MessagePiece(const std::uint32_t piece_idx, const std::uint32_t begin_offset,
                  const std::vector<std::uint8_t>& piece_data);
-    MessagePiece(const MessagePiece&);
+    MessagePiece(const MessagePiece&) = default;
 
     MessageType get_type() const override;
     std::vector<std::uint8_t> serialize() const override;
