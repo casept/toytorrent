@@ -81,6 +81,8 @@ Peer& Peer::operator=(Peer&& other) {
     return other;
 }
 
+bool Peer::operator==(const Peer& other) const { return m_ip == other.m_ip && m_port == other.m_port; }
+
 void Peer::handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id) {
     // Create connection
     try {

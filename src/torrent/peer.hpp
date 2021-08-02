@@ -9,11 +9,12 @@
 #include <string_view>
 #include <vector>
 
+#include "../job.hpp"
 #include "../reusable/smolsocket.hpp"
 #include "peer_message.hpp"
 
 namespace tt::peer {
-// Thrown on peer-related failures.
+/// Thrown on peer-related failures.
 class Exception : public std::exception {
    public:
     std::string m_msg{};
@@ -23,7 +24,7 @@ class Exception : public std::exception {
 
 const std::size_t ID_Length = 20;
 
-// A per-torrent peer identifier
+/// A per-torrent peer identifier.
 class ID {
    public:
     // Generate a new ID at random.
@@ -57,10 +58,10 @@ class Peer {
 
     Peer(const ID& id, const std::string_view& ip, const std::uint16_t port);
     Peer() = delete;
-    Peer(Peer&& src);
     // The underlying socket should only ever be touched by one instance.
     Peer(const Peer&) = delete;
     Peer& operator=(const Peer&) = delete;
+    Peer(Peer&& src);
     Peer& operator=(Peer&&);
     // Establish a connection to this peer.
     void handshake(const std::vector<std::uint8_t>& truncated_infohash, const ID& our_id);
@@ -73,7 +74,16 @@ class Peer {
     void send_keepalive();
     // Block until this peer has sent us a message.
     std::unique_ptr<IMessage> wait_for_message();
+    /// Compare this peer against `other` based on IP and Port.
+    ///
+    /// IDs are not used, because the compact tracker protocol omits them.
+    /// Therefore, the same peer may have a different IP on next tracker query.
+    bool operator==(const Peer& other) const;
 };
+
+/// A job for handshaking with the peer.
+class PeerHandshakeJob : job::IJob {};
+
 }  // namespace tt::peer
 
 namespace fmt {

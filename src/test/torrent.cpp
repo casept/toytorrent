@@ -1,5 +1,6 @@
 #include "../torrent/torrent.hpp"
 
+#include <bits/stdint-uintn.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -35,5 +36,7 @@ TEST_F(IntegrationTest, torrent_download_piece) {
 
     // Test
     Torrent t{info, us_port, download_path};
-    t.download_piece(1);
+    // TODO: Write helper for actually downloading piece
+
+    ASSERT_EQ(true, false);
 }

@@ -13,32 +13,29 @@
 
 namespace tt {
 
-// A currently live torrent.
+/// A currently live torrent.
 class Torrent {
    private:
-    // Raw torrent metainfo.
+    /// Raw torrent metainfo.
     MetaInfo m_metainfo;
-    // Data structure managing pieces of the torrent.
+    /// Data structure managing pieces of the torrent.
     piece::Map m_piece_map;
-    // Handle to file on disk.
+    /// Handle to file on disk.
     std::fstream m_file{};
-    // Our peer identity.
+    /// Our peer identity.
     peer::Peer m_us_peer;
-    // Other peers we know about.
+    /// Other peers we know about.
     std::vector<peer::Peer> m_peers;
-    // Our tracker request params.
-    tracker::Request m_tracker_req;
-    // Prepares for download.
-    void download_prepare();
+    /// Statistics for the tracker.
+    tracker::Stats m_tracker_stats;
 
    public:
     // Create a torrent from the given parsed torrent file.
     Torrent(const MetaInfo& parsed_file, const std::uint16_t our_port,
             std::optional<std::string_view> alternative_path);
-    // Block until the torrent has been downloaded (this is of course a temporary interface until something more async
-    // is developed)
-    void download();
-    // Block until piece at the given index is downloaded (mainly useful for testing)
-    void download_piece(const std::size_t piece_idx);
+    /// Send a start message to the torrent's tracker.
+    ///
+    /// This will register the client and download the initial peer list.
+    void start_tracker();
 };
 }  // namespace tt

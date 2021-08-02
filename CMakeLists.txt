@@ -23,11 +23,13 @@ add_library(
   "src/torrent/peer_message.cpp"
   "src/torrent/piece.cpp"
   "src/torrent/torrent.cpp"
+  "src/torrent/torrent_jobs.cpp"
   # (Potentially) project-independent utilities
   "src/reusable/byteorder.cpp"
   "src/reusable/smolsocket.cpp"
   # Other
-  "src/log.cpp")
+  "src/log.cpp"
+  "src/job.cpp")
 # We want ISO C++20
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 target_compile_features(lib${PROJECT_NAME} PUBLIC cxx_std_20)
@@ -37,6 +39,7 @@ target_precompile_headers(
   <algorithm>
   <array>
   <cstdint>
+  <cstdlib>
   <deque>
   <string>
   <string_view>
@@ -52,6 +55,7 @@ target_precompile_headers(
   <iterator>
   <memory>
   <tuple>
+  <utility>
   <cpr/cpr.h>
   <fmt/core.h>
   <fmt/format.h>
