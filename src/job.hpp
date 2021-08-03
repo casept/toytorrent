@@ -6,6 +6,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <vector>
 
 namespace tt::job {
 /// The key type of this module.
@@ -32,8 +33,10 @@ class JobQueue {
     JobQueue(JobQueue&&) = delete;
     JobQueue& operator=(JobQueue&&) = delete;
 
-    /// Create a new job
+    /// Enqueue a new job
     void enqueue(std::unique_ptr<IJob> j);
+    /// Enqueue a bunch of new jobs
+    void enqueue_vec(std::vector<std::unique_ptr<IJob>> j);
     /// Process jobs until all done
     void process();
 

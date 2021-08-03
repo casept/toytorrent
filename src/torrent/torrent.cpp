@@ -13,6 +13,7 @@
 #include <iostream>
 #include <istream>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -64,16 +65,16 @@ Torrent::Torrent(const MetaInfo &parsed_file, const std::uint16_t our_port,
                  std::optional<std::string_view> alternative_path)
     : m_metainfo(parsed_file),
       m_piece_map({}),
-      m_us_peer{peer::Peer(peer::ID(), "127.0.0.1", our_port)},
-      m_peers(std::vector<peer::Peer>()),
+      m_us_peer{std::make_shared<peer::Peer>(peer::Peer(peer::ID(), "127.0.0.1", our_port))},
+      m_peers(std::vector<std::shared_ptr<peer::Peer>>()),
       m_tracker_stats({0, 0, 0}) {
     // Open file
     if (alternative_path.has_value()) {
         const std::filesystem::path p{alternative_path.value()};
-        this->m_file = file_open_or_create(p);
+        m_file = file_open_or_create(p);
     } else {
         const std::filesystem::path p{this->m_metainfo.m_suggested_name};
-        this->m_file = file_open_or_create(p);
+        m_file = file_open_or_create(p);
     }
 
     // Initialize pieces
@@ -84,7 +85,7 @@ Torrent::Torrent(const MetaInfo &parsed_file, const std::uint16_t our_port,
         pieces.push_back({static_cast<std::uint32_t>(parsed_file.m_piece_length), piece_idx, expected_hash});
         piece_idx++;
     }
-    this->m_piece_map = {pieces};
+    m_piece_map = {pieces};
 }
 
 void Torrent::start_tracker() {
@@ -93,14 +94,19 @@ void Torrent::start_tracker() {
         tracker::RequestKind::STARTED,
         m_metainfo.truncated_infohash_binary(),
         m_tracker_stats,
-        m_us_peer.m_id,
-        m_us_peer.m_ip,
-        m_us_peer.m_port,
+        m_us_peer->m_id,
+        m_us_peer->m_ip,
+        m_us_peer->m_port,
     };
     auto [new_peers, next_checkin] = tracker::send_request(m_metainfo.m_primary_tracker_url, req);
+    std::vector<std::shared_ptr<peer::Peer>> new_peers_ptrs{};
+    new_peers_ptrs.reserve(new_peers.size());
+    for (auto &peer : new_peers) {
+        new_peers_ptrs.push_back(std::make_shared<peer::Peer>(std::move(peer)));
+    }
 
     // Update peers by merging old and new peer lists
-    for (auto &peer : new_peers) {
+    for (auto &peer : new_peers_ptrs) {
         // If peer is already present, keep the old version
         if (std::find(m_peers.begin(), m_peers.end(), peer) == std::end(m_peers)) {
             continue;
@@ -113,23 +119,13 @@ void Torrent::start_tracker() {
     }
 }
 
-/// Handshakes with all peers.
-static void handshake(std::vector<peer::Peer> &peers, const peer::Peer &us_peer,
-                      const std::vector<std::uint8_t> &trunc_infohash_binary) {
-    for (peer::Peer &peer : peers) {
-        fmt::print("Peer IP: {}, peer port: {}, our IP: {}, our port: {}\n", peer.m_ip, peer.m_port, us_peer.m_ip,
-                   us_peer.m_port);
-        // Don't handshake with ourselves if the tracker returns us for whatever reason
-        if ((peer.m_ip != us_peer.m_ip) || (peer.m_port != us_peer.m_port)) {
-            try {
-                peer.handshake(trunc_infohash_binary, us_peer.m_id);
-            } catch (const peer::Exception &e) {
-                // TODO: Send into a retry queue and do exponential backoff or something
-                log::log(log::Level::Warning, log::Subsystem::Torrent,
-                         fmt::format("Torrent::handshake(): Peer failed: {}", e.what()));
-            }
-        }
+std::vector<std::unique_ptr<peer::PeerHandshakeJob>> Torrent::create_handshake_jobs() {
+    std::vector<std::unique_ptr<peer::PeerHandshakeJob>> jobs{};
+    for (auto peer : m_peers) {
+        jobs.emplace_back(
+            std::make_unique<peer::PeerHandshakeJob>(peer, m_metainfo.truncated_infohash_binary(), m_us_peer->m_id));
     }
+    return jobs;
 }
 
 static void download_piece_from(piece::Piece &wanted, peer::Peer &p, std::fstream &f) {

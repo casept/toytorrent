@@ -82,7 +82,18 @@ class Peer {
 };
 
 /// A job for handshaking with the peer.
-class PeerHandshakeJob : job::IJob {};
+/// What happens if handshaking has already happened is undefined.
+class PeerHandshakeJob final : public job::IJob {
+   public:
+    PeerHandshakeJob() = delete;
+    PeerHandshakeJob(std::shared_ptr<Peer>, std::vector<std::uint8_t> truncated_infohash, ID our_id);
+    void process() override;
+
+   private:
+    std::shared_ptr<Peer> m_peer;
+    std::vector<std::uint8_t> m_truncated_infohash;
+    ID m_our_id;
+};
 
 }  // namespace tt::peer
 

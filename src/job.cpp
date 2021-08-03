@@ -2,11 +2,18 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace tt::job {
 JobQueue::JobQueue() noexcept : m_jobs(std::deque<std::unique_ptr<IJob>>()) {}
 
 void JobQueue::enqueue(std::unique_ptr<IJob> j) { m_jobs.push_back(std::move(j)); }
+
+void JobQueue::enqueue_vec(std::vector<std::unique_ptr<IJob>> j) {
+    for (auto& job : j) {
+        m_jobs.push_back(std::move(job));
+    }
+}
 
 std::optional<std::unique_ptr<IJob>> JobQueue::deque() { return {}; }
 

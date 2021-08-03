@@ -26,8 +26,10 @@ int main(int argc, char** argv) {
     const std::optional<std::string_view> alternative_path{};
     auto torrent{std::make_shared<tt::Torrent>(metainfo, PORT, alternative_path)};
 
-    auto start_job{std::make_unique<tt::torrent::TrackerInteractionJob>(torrent, tt::tracker::RequestKind::STARTED)};
-    jobs.enqueue(std::move(start_job));
-    // TODO: Peer handshake jobs
+    auto tracker_start_job{
+        std::make_unique<tt::torrent::TrackerInteractionJob>(torrent, tt::tracker::RequestKind::STARTED)};
+    jobs.enqueue(std::move(tracker_start_job));
+    auto handshake_jobs{torrent->create_handshake_jobs()};
+    jobs.enqueue_vec(std::move(handshake_jobs));
     jobs.process();
 }

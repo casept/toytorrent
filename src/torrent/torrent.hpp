@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <fstream>
 #include <iosfwd>
+#include <memory>
 #include <optional>
 #include <string_view>
 #include <vector>
 
 #include "metainfo.hpp"
+#include "peer.hpp"
 #include "piece.hpp"
 #include "tracker.hpp"
 
@@ -23,9 +25,9 @@ class Torrent {
     /// Handle to file on disk.
     std::fstream m_file{};
     /// Our peer identity.
-    peer::Peer m_us_peer;
+    std::shared_ptr<peer::Peer> m_us_peer;
     /// Other peers we know about.
-    std::vector<peer::Peer> m_peers;
+    std::vector<std::shared_ptr<peer::Peer>> m_peers;
     /// Statistics for the tracker.
     tracker::Stats m_tracker_stats;
 
@@ -37,5 +39,7 @@ class Torrent {
     ///
     /// This will register the client and download the initial peer list.
     void start_tracker();
+    /// Construct a handshake job for each peer.
+    std::vector<std::unique_ptr<peer::PeerHandshakeJob>> create_handshake_jobs();
 };
 }  // namespace tt
