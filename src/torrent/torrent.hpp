@@ -15,9 +15,11 @@
 
 namespace tt {
 
-/// A currently live torrent.
-class Torrent {
-   private:
+/// Container for data related to a single torrent.
+/// This is just a data container, actual downloads etc happen using helper jobs that access this data
+/// rather than methods directly on it.
+struct Torrent {
+   public:
     /// Raw torrent metainfo.
     MetaInfo m_metainfo;
     /// Data structure managing pieces of the torrent.
@@ -31,7 +33,6 @@ class Torrent {
     /// Statistics for the tracker.
     tracker::Stats m_tracker_stats;
 
-   public:
     // Create a torrent from the given parsed torrent file.
     Torrent(const MetaInfo& parsed_file, const std::uint16_t our_port,
             std::optional<std::string_view> alternative_path);

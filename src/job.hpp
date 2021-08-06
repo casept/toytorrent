@@ -35,8 +35,6 @@ class JobQueue {
 
     /// Enqueue a new job
     void enqueue(std::unique_ptr<IJob> j);
-    /// Enqueue a bunch of new jobs
-    void enqueue_vec(std::vector<std::unique_ptr<IJob>> j);
     /// Process jobs until all done
     void process();
 

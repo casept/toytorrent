@@ -18,7 +18,7 @@ TorrentSwarmTestCtx::TorrentSwarmTestCtx(const std::string_view& torrent_file_pa
     const std::uint16_t initial_port = 4096;
     const std::size_t num_peers = 5;
     for (std::uint16_t i = 0; i < num_peers; i++) {
-        const auto port = initial_port + i;
+        const std::uint16_t port = initial_port + i;
         this->m_aria2c_peer_ports.push_back(port);
         this->m_aria2c_peers.emplace_back(
             bp::search_path("aria2c"),

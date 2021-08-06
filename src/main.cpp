@@ -26,10 +26,21 @@ int main(int argc, char** argv) {
     const std::optional<std::string_view> alternative_path{};
     auto torrent{std::make_shared<tt::Torrent>(metainfo, PORT, alternative_path)};
 
+    // Start torrent
     auto tracker_start_job{
         std::make_unique<tt::torrent::TrackerInteractionJob>(torrent, tt::tracker::RequestKind::STARTED)};
     jobs.enqueue(std::move(tracker_start_job));
     auto handshake_jobs{torrent->create_handshake_jobs()};
-    jobs.enqueue_vec(std::move(handshake_jobs));
+    for (auto& job : handshake_jobs) {
+        jobs.enqueue(std::move(job));
+    }
+
+    // Create requests for pieces
+    // TODO: Do it for all pieces rather than just first once bugs are fixed
+    auto first_piece_download_job{std::make_unique<tt::torrent::PieceDownloadJob>(torrent, 0)};
+    jobs.enqueue(std::move(first_piece_download_job));
+
     jobs.process();
+
+    return EXIT_SUCCESS;
 }

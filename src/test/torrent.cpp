@@ -5,10 +5,13 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "../torrent/metainfo.hpp"
 #include "../torrent/peer.hpp"
+#include "../torrent/torrent_jobs.hpp"
 #include "../torrent/tracker.hpp"
 #include "helpers.hpp"
 
@@ -30,13 +33,16 @@ static std::string random_string(size_t length) {
 
 TEST_F(IntegrationTest, torrent_download_piece) {
     // Setup
-    const auto info = metainfo_from_path(Torrent_File_Path);
+    const std::size_t piece_idx = 0;
+    const auto info{metainfo_from_path(Torrent_File_Path)};
     const std::uint16_t us_port = 12345;
-    const auto download_path = std::filesystem::temp_directory_path().append(random_string(32)).string();
+    const auto download_path{std::filesystem::temp_directory_path().append(random_string(32)).string()};
+    auto t{std::make_shared<Torrent>(info, us_port, download_path)};
+    auto piece_dl_job{std::make_unique<torrent::PieceDownloadJob>(t, piece_idx)};
+    job::JobQueue jq{};
+    jq.enqueue(std::move(piece_dl_job));
 
-    // Test
-    Torrent t{info, us_port, download_path};
-    // TODO: Write helper for actually downloading piece
+    jq.process();
 
-    ASSERT_EQ(true, false);
+    ASSERT_EQ(t->m_piece_map.get_piece(piece_idx)->m_state, tt::piece::State::HaveUnverified);
 }

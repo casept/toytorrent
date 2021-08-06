@@ -4,7 +4,6 @@
 #include <fmt/format.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +17,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -82,7 +80,8 @@ Torrent::Torrent(const MetaInfo &parsed_file, const std::uint16_t our_port,
     std::uint32_t piece_idx = 0;
     for (const auto &expected_hash : parsed_file.m_pieces) {
         // TODO: Handle last piece being shorter
-        pieces.push_back({static_cast<std::uint32_t>(parsed_file.m_piece_length), piece_idx, expected_hash});
+        pieces.emplace_back(static_cast<std::uint32_t>(parsed_file.m_piece_length), piece_idx, expected_hash,
+                            piece::State::Want);
         piece_idx++;
     }
     m_piece_map = {pieces};
@@ -127,90 +126,4 @@ std::vector<std::unique_ptr<peer::PeerHandshakeJob>> Torrent::create_handshake_j
     }
     return jobs;
 }
-
-static void download_piece_from(piece::Piece &wanted, peer::Peer &p, std::fstream &f) {
-    // Request subpieces from peer sequentially until finished
-    std::uint32_t subpiece_idx = 0;
-    for (auto &subpiece : wanted.m_subpieces) {
-        if (!subpiece.has_value()) {
-            const auto req = peer::MessageRequest(wanted.m_idx, subpiece_idx * peer::Request_Subpiece_Size,
-                                                  peer::Request_Subpiece_Size);
-            p.send_message(req);
-            const auto &msg = p.wait_for_message();
-            if (msg->get_type() != peer::MessageType::Piece) {
-                log::log(log::Level::Debug, log::Subsystem::Torrent,
-                         fmt::format("Torrent::download(): Expected message of type {}, got {}. Ignoring.",
-                                     peer::MessageType::Piece, msg->get_type()));
-            }
-            // Push contents into subpiece
-            const auto piece_msg = dynamic_cast<const peer::MessagePiece *>(msg.get());
-            wanted.set_downloaded_subpiece_data(static_cast<std::size_t>(subpiece_idx), piece_msg->get_piece_data());
-        }
-        subpiece_idx++;
-    }
-    wanted.m_state = piece::State::HaveUnverified;
-
-    // Compare hashes
-    if (!wanted.hashes_match()) {
-        // TODO: We probably want to reset the piece and enqueue for redownload
-        const std::string msg = fmt::format("Piece hash mismatch (expected {}, got {})", wanted.get_expected_hash_str(),
-                                            wanted.get_curr_hash_str());
-
-        log::log(log::Level::Fatal, log::Subsystem::Torrent, msg);
-        throw std::runtime_error(msg);
-    }
-
-    // Flush to disk
-    wanted.flush_to_disk(f);
-    wanted.m_state = piece::State::HaveVerified;
-}
-
-/*
-void Torrent::download_piece(const std::size_t piece_idx) {
-    this->download_prepare();
-
-    // For now, perform a very stupid strategy of downloading sequentially from a single peer.
-    // TODO: Do load balancing and all that
-    while (this->m_peers.size() < 1) {
-        log::log(log::Level::Warning, log::Subsystem::Torrent,
-                 "Torrent::download_piece(): Do not have any peers in swarm, waiting!");
-        std::this_thread::sleep_for(std::chrono::seconds{1});
-        this->m_tracker_req.kind = tracker::RequestKind::UPDATE;
-    }
-
-    auto &single_peer = this->m_peers.at(0);
-    // TODO: Probably need to unchoke peer
-
-    auto wanted = this->m_piece_map.get_piece(piece_idx);
-    download_piece_from(wanted, single_peer, this->m_file);
-    log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download_piece(): Download complete!");
-
-    // Tracker checkout
-    this->m_tracker_req.kind = tracker::RequestKind::STOPPED;
-    tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
-}
-
-void Torrent::download() {
-    this->download_prepare();
-
-    // For now, perform a very stupid strategy of downloading sequentially from a single peer.
-    // TODO: Do load balancing and all that
-    auto &single_peer = this->m_peers.at(0);
-    // TODO: Probably need to unchoke peer
-
-    while (true) {
-        auto wanted_wrapped = this->m_piece_map.get_best_wanted_piece();
-        if (!wanted_wrapped.has_value()) {
-            break;  // Done
-        }
-        auto &wanted = wanted_wrapped.value().get();
-        download_piece_from(wanted, single_peer, this->m_file);
-    }
-    log::log(log::Level::Debug, log::Subsystem::Torrent, "Torrent::download(): Download complete!");
-
-    // Tracker checkout
-    this->m_tracker_req.kind = tracker::RequestKind::STOPPED;
-    tracker::send_request(this->m_metainfo.m_primary_tracker_url, this->m_tracker_req);
-}
-*/
 }  // namespace tt

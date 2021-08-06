@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <exception>
 #include <fstream>
 #include <functional>
 #include <optional>
@@ -19,8 +20,8 @@
 
 namespace tt::piece {
 Piece::Piece(const std::uint32_t size, const std::uint32_t idx,
-             const std::array<std::uint8_t, Piece_Hash_Len> expected_hash)
-    : m_size(size), m_idx(idx), m_expected_hash(expected_hash), m_subpieces({}) {
+             const std::array<std::uint8_t, Piece_Hash_Len> expected_hash, const State state)
+    : m_state(state), m_size(size), m_idx(idx), m_expected_hash(expected_hash), m_subpieces({}) {
     auto num_subpieces = size / peer::Request_Subpiece_Size;
     if (size % peer::Request_Subpiece_Size != 0) {
         num_subpieces += 1;
@@ -67,11 +68,11 @@ void Piece::set_downloaded_subpiece_data(const std::size_t subpiece_idx, const s
     this->m_subpieces.at(subpiece_idx) = {data};
 }
 
-void Piece::flush_to_disk(std::fstream& f) {
+void Piece::flush_to_disk(std::shared_ptr<std::fstream> f) {
     // Seek into position
-    f.exceptions(std::fstream::failbit | std::fstream::badbit | std::fstream::eofbit);
+    f->exceptions(std::fstream::failbit | std::fstream::badbit | std::fstream::eofbit);
     try {
-        f.seekp(this->m_idx * this->m_size);
+        f->seekp(this->m_idx * this->m_size);
     } catch (const std::ios_base::failure& e) {
         throw std::runtime_error(fmt::format("Piece::flush_to_disk() failed: Failed to seek (Reason: {})", e.what()));
     }
@@ -81,7 +82,8 @@ void Piece::flush_to_disk(std::fstream& f) {
         for (auto& opt_subpiece : this->m_subpieces) {
             if (opt_subpiece.has_value()) {
                 auto& subpiece = opt_subpiece.value();
-                f.write(reinterpret_cast<char*>(subpiece.data()), subpiece.size() * sizeof(char));
+                f->write(reinterpret_cast<char*>(subpiece.data()),
+                         static_cast<std::streamsize>(subpiece.size() * sizeof(char)));
             }
         }
     } catch (const std::ios_base::failure& e) {
@@ -89,14 +91,33 @@ void Piece::flush_to_disk(std::fstream& f) {
     }
 }
 
-Map::Map(std::vector<Piece> pieces) : m_pieces(pieces) {}
-Piece& Map::get_piece(const std::size_t index) { return this->m_pieces.at(index); }
-std::optional<std::reference_wrapper<Piece>> Map::get_best_wanted_piece() {
-    for (auto& piece : this->m_pieces) {
-        if (piece.m_state == State::Want) {
-            return {piece};
-        }
+Map::Map(std::vector<Piece> pieces) : m_pieces({}) {
+    for (auto piece : pieces) {
+        m_pieces.push_back(std::make_shared<Piece>(piece));
     }
-    return {};
+}
+
+std::shared_ptr<Piece> Map::get_piece(const std::size_t index) { return this->m_pieces.at(index); }
+
+PieceVerificationJob::PieceVerificationJob(std::shared_ptr<piece::Piece> p) : m_piece(std::move(p)){};
+
+void PieceVerificationJob::process() {
+    if (m_piece->hashes_match()) {
+        m_piece->m_state = piece::State::HaveVerified;
+    } else {
+        const auto msg{fmt::format("Failed to verify piece hash: expected {}, got {}", m_piece->get_expected_hash_str(),
+                                   m_piece->get_curr_hash_str())};
+        log::log(log::Level::Warning, log::Subsystem::Torrent, msg);
+    }
+}
+
+PieceFlushJob::PieceFlushJob(std::shared_ptr<piece::Piece> p, std::shared_ptr<std::fstream> file)
+    : m_piece(std::move(p)), m_file(std::move(file)){};
+
+void PieceFlushJob::process() {
+    if (m_piece->m_state != piece::State::HaveVerified) {
+        throw std::runtime_error("PieceFlushJob::process(): Piece not verified");
+    }
+    m_piece->flush_to_disk(m_file);
 }
 }  // namespace tt::piece

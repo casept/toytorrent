@@ -186,6 +186,8 @@ if(BUILD_TESTING)
     <chrono>
     <string>
     <string_view>
+    <memory>
+    <utility>
     <vector>
     <boost/process.hpp>
     <gtest/gtest.h>

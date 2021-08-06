@@ -58,11 +58,11 @@ TEST_F(IntegrationTest, peer_request_piece) {
         if (peer.m_port != us_peer.m_port) {
             peer.handshake(info.truncated_infohash_binary(), us_peer.m_id);
 
-            const auto request = tt::peer::MessageRequest(0, 0, info.m_piece_length);
+            const auto request{tt::peer::MessageRequest(0, 0, static_cast<std::uint32_t>(info.m_piece_length))};
             peer.send_message(request);
 
             // Process and verify reply
-            auto response = peer.wait_for_message();
+            auto response{peer.wait_for_message()};
             if (response->get_type() != tt::peer::MessageType::Piece) {
                 FAIL() << "Got unexpected message type";
             }
