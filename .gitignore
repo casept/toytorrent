@@ -3,5 +3,6 @@
 .cache/
 build/
 result/
+.direnv/
 .tmp-arion*.yml
 compile_commands.json

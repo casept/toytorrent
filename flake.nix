@@ -1,15 +1,23 @@
-let
-  sources = import ./nix/sources.nix;
-  niv = import sources.niv { inherit sources; };
-  arion = import sources.arion {};
-  pkgs = import sources.nixpkgs {};
-in
-pkgs.mkShell {
-  CMAKE_INCLUDE_PATH = "${pkgs.curlFull.dev}/include";
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs";
+    flake-utils.url = "github:numtide/flake-utils";
+    nix-direnv.url = "github:nix-community/nix-direnv";
+    arion.url = "github:hercules-ci/arion";
+  };
+
+  outputs = { self, nixpkgs, flake-utils, nix-direnv, arion }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+        devShell = pkgs.mkShell {
+            CMAKE_INCLUDE_PATH = "${pkgs.curlFull.dev}/include";
   CMAKE_LIBRARY_PATH = "${pkgs.curlFull}/lib";
   CMAKE_PREFIX_PATH = "${pkgs.curlFull}";
   LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
-  buildInputs = [
+          buildInputs = with pkgs; [
     # Dev tooling
     pkgs.clang_12
     pkgs.clang-tools
@@ -46,6 +54,8 @@ pkgs.mkShell {
 
     # Nix support
     pkgs.niv
-    arion.arion
+    arion
   ];
+        };
+      });
 }
